@@ -56,7 +56,7 @@ namespace SubdivisionRenderer
 			_device = device;
 			Model = model;
 			_currentShader = ShaderMode.Flat;
-			CompileShaders(Path.Combine("Textures", "Texture.dds"), Path.Combine("Shaders", "Tesselation.hlsl"));
+			CompileShaders(Path.Combine("Textures", "Texture.dds"), Path.Combine("Shaders", "Tessellation.hlsl"));
 		}
 
 		public void ChangeShader(ShaderMode shader)
@@ -134,7 +134,7 @@ namespace SubdivisionRenderer
 			_enableTexture.Set(parameters.Textured);
 
 			// Set Tesselation
-			_tessFactor.Set(parameters.TesselationFactor);
+			_tessFactor.Set(parameters.TessellationFactor);
 
 			// Set Lighting
 			_phongParameters.Set(Lighting.PhongParameters.AsVector());
@@ -321,8 +321,8 @@ namespace SubdivisionRenderer
 	struct RenderParameters
 	{
 		public bool WireFrame;
-		public float TesselationFactor;
-		public float TesselationStep;
+		public float TessellationFactor;
+		public float TessellationStep;
 		public long TicksLastFrame;
 		public bool Textured;
 		public bool FlatShading;

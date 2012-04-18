@@ -9,7 +9,7 @@
 //----------------------------------------------------------------------------------------
 float4x4	World				: WorldMatrix;
 float4x4	WorldViewProj		: WorldViewProjectionMatrix;
-float		TessFactor			: TesselationFactor;
+float		TessFactor			: TessellationFactor;
 Texture2D	Texture				: TextureMap;
 bool		EnableTexture		: TexturesEnabled;
 bool		FlatShading			: FlatShadingEnabled;

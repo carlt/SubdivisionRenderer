@@ -23,8 +23,8 @@ namespace SubdivisionRenderer
 		private static RenderParameters _renderParameters = 
 			new RenderParameters {
 				WireFrame = false,
-				TesselationFactor = 1f,
-				TesselationStep = 0.25f,
+				TessellationFactor = 1f,
+				TessellationStep = 0.25f,
 				Textured = false,
 				FlatShading = false,
 				TicksLastFrame = 200,
@@ -82,10 +82,10 @@ namespace SubdivisionRenderer
 		private static void UpdateTitle(Control renderForm)
 		{
 			renderForm.Text =
-				String.Format("{0} fps | Subdivion: {1} | TesselationFactor: {2} | Textures: {3} | Wireframe: {4}",
+				String.Format("{0} fps | Subdivion: {1} | TessellationFactor: {2} | Textures: {3} | Wireframe: {4}",
 				_renderParameters.FrameRate.ToString("F0", CultureInfo.InvariantCulture),
 				_modelRenderer.GetSubdivisionMode(),
-				_renderParameters.TesselationFactor.ToString("F0", CultureInfo.InvariantCulture),
+				_renderParameters.TessellationFactor.ToString("F0", CultureInfo.InvariantCulture),
 				_renderParameters.Textured ? "ON" : "OFF",
 				_renderParameters.WireFrame ? "ON" : "OFF");
 		}
@@ -137,17 +137,17 @@ namespace SubdivisionRenderer
 			}
 			else if (e.KeyCode == Controls.TessFactorUp)
 			{
-				_renderParameters.TesselationFactor =
-					_renderParameters.TesselationFactor + _renderParameters.TesselationStep > 64f
-					? _renderParameters.TesselationFactor
-					: _renderParameters.TesselationFactor + _renderParameters.TesselationStep;
+				_renderParameters.TessellationFactor =
+					_renderParameters.TessellationFactor + _renderParameters.TessellationStep > 64f
+					? _renderParameters.TessellationFactor
+					: _renderParameters.TessellationFactor + _renderParameters.TessellationStep;
 			}
 			else if (e.KeyCode == Controls.TessFactorDown)
 			{
-				_renderParameters.TesselationFactor =
-					_renderParameters.TesselationFactor - _renderParameters.TesselationStep < 1f
-					? _renderParameters.TesselationFactor
-					: _renderParameters.TesselationFactor - _renderParameters.TesselationStep;
+				_renderParameters.TessellationFactor =
+					_renderParameters.TessellationFactor - _renderParameters.TessellationStep < 1f
+					? _renderParameters.TessellationFactor
+					: _renderParameters.TessellationFactor - _renderParameters.TessellationStep;
 			}
 			else if (e.KeyCode == Controls.TextureToggle)
 			{
