@@ -24,7 +24,7 @@ namespace SubdivisionRenderer
 			new RenderParameters {
 				WireFrame = false,
 				TesselationFactor = 1f,
-				TesselationStep = 1f,
+				TesselationStep = 0.25f,
 				Textured = false,
 				FlatShading = false,
 				TicksLastFrame = 200,

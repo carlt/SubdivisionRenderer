@@ -1,6 +1,9 @@
 ﻿#define MAX_ACC_POINTS 32
 #define MOD4(x) ((x)&3)
 
+// fractional_odd, fractional_even, integer, pow2
+#define PARTITIONING "fractional_odd"
+
 //----------------------------------------------------------------------------------------
 // Standard Variables
 //----------------------------------------------------------------------------------------
@@ -204,7 +207,7 @@ HS_CONSTANT_OUTPUT HSCONSTANT_FLAT(InputPatch<VS_OUTPUT, 4> ip, uint pid : SV_Pr
 }
 
 [domain("quad")]
-[partitioning("integer")]
+[partitioning(PARTITIONING)]
 [outputtopology("triangle_cw")]
 [outputcontrolpoints(4)]
 [patchconstantfunc("HSCONSTANT_FLAT")]
@@ -274,7 +277,7 @@ DS_OUTPUT DS_PHONG(HS_CONSTANT_OUTPUT input, float2 UV : SV_DomainLocation, cons
 	float3 phongTopMid	= lerp(c0, c1, UV.x);
 	float3 phongBotMid	= lerp(c3, c2, UV.x);
 
-	float3 phongNew		= lerp(newVertex, lerp(phongTopMid, phongBotMid, UV.y), 3./4. /* alpha parameter, default = 3/4 */);
+	float3 phongNew		= lerp(newVertex, lerp(phongTopMid, phongBotMid, UV.y), 0.75f /* alpha parameter, default = 3/4 */);
 
 	output.posworld		= mul(phongNew, (float3x3) World);
 	output.position		= mul(float4(phongNew, 1), WorldViewProj);
@@ -299,7 +302,7 @@ DS_OUTPUT DS_PHONG(HS_CONSTANT_OUTPUT input, float2 UV : SV_DomainLocation, cons
 // PN Quads Tesselation Shaders
 //----------------------------------------------------------------------------------------
 [domain("quad")]
-[partitioning("integer")]
+[partitioning(PARTITIONING)]
 [outputtopology("triangle_cw")]
 [outputcontrolpoints(4)]
 [patchconstantfunc("HSCONSTANT_PNQUAD")]
@@ -709,7 +712,7 @@ HS_CONSTANT_ACC_OUTPUT HSCONSTANT_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip,
 // codepath; this change is expected to increase performance at the expense of readability.
 //--------------------------------------------------------------------------------------
 [domain("quad")]
-[partitioning("integer")]
+[partitioning(PARTITIONING)]
 [outputtopology("triangle_cw")]
 [outputcontrolpoints(16)]
 [patchconstantfunc("HSCONSTANT_ACC")]
