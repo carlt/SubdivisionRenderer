@@ -49,7 +49,6 @@ struct VS_INPUT
 {
 	float4 position : POSITION;
 	float3 normal	: NORMAL;
-	float3 tangent  : TANGENT;
 	float2 texcoord	: TEXCOORD;
 };
 
@@ -57,7 +56,6 @@ struct VS_OUTPUT
 {
 	float4 position : POSITION;
 	float3 normal	: NORMAL;
-	float3 tangent	: TANGENT;
 	float2 texcoord	: TEXCOORD;
 };
 
@@ -77,6 +75,7 @@ struct HS_OUTPUT
 struct BEZIER_CONTROL_POINT
 {
     float3 position : BEZIERPOS;
+	float3 normal	: NORMAL;
 };
 
 struct DS_OUTPUT
@@ -189,7 +188,6 @@ VS_OUTPUT VS(VS_INPUT input)
 	output.position = input.position;
 	output.normal	= input.normal;
 	output.texcoord = input.texcoord;
-	output.tangent  = input.tangent;
 
 	return output;
 }
@@ -398,7 +396,7 @@ HSCONSTANT_PNQUAD_OUTPUT HSCONSTANT_PNQUAD(InputPatch<VS_OUTPUT, 4> inputPatch, 
 	output.CenterNormal = 2.0 * (output.EdgeNormals[0] + output.EdgeNormals[1] + output.EdgeNormals[2] + output.EdgeNormals[3]); 
 	output.CenterNormal += inputPatch[0].normal + inputPatch[1].normal + inputPatch[2].normal + inputPatch[3].normal;
 	output.CenterNormal /= 12;
-	output.CenterNormal = output.CenterNormal;
+	output.CenterNormal = normalize(output.CenterNormal);
 
     return output;
 }
@@ -440,8 +438,6 @@ DS_OUTPUT DS_PNQUAD(HSCONSTANT_PNQUAD_OUTPUT input, float2 uv : SV_DomainLocatio
 	return output;
 }
 
-
-
 //----------------------------------------------------------------------------------------
 // ACC Tesselation Shaders
 //----------------------------------------------------------------------------------------
@@ -464,6 +460,25 @@ float4 ComputeInteriorVertex( uint index,
     return float4(0,0,0,0);
 }
 
+float3 ComputeInteriorNormal( uint index, 
+                              uint Val[4], 
+                              const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip )
+{
+    switch( index )
+    {
+    case 0:
+        return (ip[0].normal*Val[0] + ip[1].normal*2 +      ip[2].normal +        ip[3].normal*2)      / (5+Val[0]);
+    case 1:
+        return (ip[0].normal*2 +      ip[1].normal*Val[1] + ip[2].normal*2 +      ip[3].normal)        / (5+Val[1]);
+    case 2:
+        return (ip[0].normal +        ip[1].normal*2 +      ip[2].normal*Val[2] + ip[3].normal*2)      / (5+Val[2]);
+    case 3:
+        return (ip[0].normal*2 +      ip[1].normal +        ip[2].normal*2 +      ip[3].normal*Val[3]) / (5+Val[3]);
+    }
+    
+    return float3(0,0,0);
+}
+
 //--------------------------------------------------------------------------------------
 // Computes the corner vertices of the output UV patch.  The corner vertices are
 // a weighted combination of all points that are "connected" to that corner by an edge.
@@ -477,13 +492,12 @@ float4 ComputeInteriorVertex( uint index,
 // the coefficient of that corner.  The walk goes from the prefix value of the previous
 // corner to the prefix value of the current corner.
 //--------------------------------------------------------------------------------------
-void ComputeCornerVertex( uint index, 
-                          out float3 CornerB, // Corner for the Bezier patch
-                          out float3 CornerU, // Corner for the tangent patch
-                          out float3 CornerV, // Corner for the bitangent patch
-                          const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
-                          const in uint Val[4], 
-                          const in uint Pref[4] )
+void ComputeCorner( uint index, 
+                    out float3 CornerB, // Corner for the Bezier patch
+                    out float3 CornerN, // Corner for the normal patch
+                    const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
+                    const in uint Val[4], 
+                    const in uint Pref[4] )
 {
     const float fOWt = 1;
     const float fEWt = 4;
@@ -496,39 +510,26 @@ void ComputeCornerVertex( uint index,
         PrefIm1 = Pref[index-1];
         uStart = PrefIm1;
     }
-    
-    // Setup the walk indices
-    uint uTIndexStart = 2 - (index&1);
-    uint uTIndex = uTIndexStart;
 
     // Calculate the N*N weight for the final value
     CornerB = (Val[index]*Val[index])*ip[index].position.xyz; // n^2 part
-
-    // Zero out the corners
-    CornerU = float3(0,0,0);
-    CornerV = float3(0,0,0);
-    
-    const uint uV = Val[index]  + ( ( index & 1 ) ? 1 : -1 );
+	CornerN = (Val[index]*Val[index])*ip[index].normal;
         
     // Start the walk with the uStart prefix (the prefix of the corner before us)
     CornerB += ip[uStart].position.xyz * fEWt;
-    //CornerU += ip[uStart].vPosition * TANM( uTIndex * 2, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2, index);
-
+	CornerN += ip[uStart].normal * fEWt;
+    
     // Gather all vertices between the previous corner's prefix and our own prefix
     // We'll do two at a time, since they always come in twos
     while(uStart < Pref[index]-1) 
     {
         ++uStart;
         CornerB += ip[uStart].position.xyz * fOWt;
-        //CornerU += ip[uStart].vPosition * TANM( uTIndex * 2 + 1, index );
-        //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2 + 1, index );
+		CornerN += ip[uStart].normal * fOWt;
 
-        ++uTIndex;
         ++uStart;
         CornerB += ip[uStart].position.xyz * fEWt;
-        //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2, index );
-        //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex+uV)%Val[index]) * 2, index );
+		CornerN += ip[uStart].normal * fEWt;
     }
     ++uStart;
 
@@ -536,58 +537,37 @@ void ComputeCornerVertex( uint index,
     if (index == 3)
         uStart = 4; 
     CornerB += ip[uStart].position.xyz * fOWt;
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2 + 1, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2 + 1, index );
+	CornerN += ip[uStart].normal * fOWt;
 
     // Add in the guy before the prefix as well
     if (index)
         uStart = PrefIm1-1;
     else
         uStart = Pref[3]-1;
-    uTIndex = uTIndexStart-1;
 
     CornerB += ip[uStart].position.xyz * fOWt;
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2 + 1, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2 + 1, index );
+	CornerN += ip[uStart].normal * fOWt;
 
     // We're done with the walk now.  Now we need to add the contributions of the original subd quad.
     CornerB += ip[MOD4(index+1)].position.xyz * fEWt;
     CornerB += ip[MOD4(index+2)].position.xyz * fOWt;
     CornerB += ip[MOD4(index+3)].position.xyz * fEWt;
+
+	CornerN += ip[MOD4(index+1)].normal * fEWt;
+    CornerN += ip[MOD4(index+2)].normal * fOWt;
+    CornerN += ip[MOD4(index+3)].normal * fEWt;
     
-    uTIndex = 0 + (index&1)*(Val[index]-1);
-    uStart = MOD4(index+1);
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2, index );
-    
-    uStart = MOD4(index+2);
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2 + 1, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2 + 1, index );
-
-    uStart = MOD4(index+3);
-    uTIndex = (uTIndex+1)%Val[index];
-
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2, index );
-
     // Normalize the corner weights
     CornerB *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] ); // normalize
-
-    // fixup signs from directional derivatives...
-    //if( !((index - 1) & 2) ) // 1 and 2
-    //    CornerU *= -1;
-
-    //if( index >= 2 ) // 2 and 3
-    //    CornerV *= -1;
+	CornerN *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] );
 }
 
-void ComputeCornerVertex4444( uint index, 
-                          out float3 CornerB, // Corner for the Bezier patch
-                          out float3 CornerU, // Corner for the tangent patch
-                          out float3 CornerV, // Corner for the bitangent patch
-                          const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
-                          const in uint Val[4], 
-                          const in uint Pref[4] )
+void ComputeCorner4444( uint index, 
+                        out float3 CornerB, // Corner for the Bezier patch
+                        out float3 CornerN, // Corner for the normal patch
+                        const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
+                        const in uint Val[4], 
+                        const in uint Pref[4] )
 {
     const float fOWt = 1;
     const float fEWt = 4;
@@ -601,38 +581,25 @@ void ComputeCornerVertex4444( uint index,
         uStart = PrefIm1;
     }
     
-    // Setup the walk indices
-    uint uTIndexStart = 2 - (index&1);
-    uint uTIndex = uTIndexStart;
-
     // Calculate the N*N weight for the final value
     CornerB = (Val[index]*Val[index])*ip[index].position.xyz; // n^2 part
+	CornerN = (Val[index]*Val[index])*ip[index].normal;
 
-    // Zero out the corners
-    CornerU = float3(0,0,0);
-    CornerV = float3(0,0,0);
-    
-    const uint uV = Val[index]  + ( ( index & 1 ) ? 1 : -1 );
-        
     // Start the walk with the uStart prefix (the prefix of the corner before us)
     CornerB += ip[uStart].position.xyz * fEWt;
-    //CornerU += ip[uStart].vPosition * TANM( uTIndex * 2, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2, index);
+	CornerN += ip[uStart].normal * fEWt;
 
     // Gather all vertices between the previous corner's prefix and our own prefix
     // We'll do two at a time, since they always come in twos
     while(uStart < Pref[index]-1) 
     {
         ++uStart;
-        CornerB += ip[uStart].position.xyz * fOWt;
-        //CornerU += ip[uStart].vPosition * TANM( uTIndex * 2 + 1, index );
-        //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2 + 1, index );
+        CornerB += ip[uStart].position.xyz * fOWt;	
+        CornerN += ip[uStart].normal * fOWt;
 
-        ++uTIndex;
         ++uStart;
         CornerB += ip[uStart].position.xyz * fEWt;
-        //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2, index );
-        //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex+uV)%Val[index]) * 2, index );
+		CornerN += ip[uStart].normal * fEWt;
     }
     ++uStart;
 
@@ -640,49 +607,29 @@ void ComputeCornerVertex4444( uint index,
     if (index == 3)
         uStart = 4; 
     CornerB += ip[uStart].position.xyz * fOWt;
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2 + 1, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2 + 1, index );
+	CornerN += ip[uStart].normal * fOWt;
 
     // Add in the guy before the prefix as well
     if (index)
         uStart = PrefIm1-1;
     else
         uStart = Pref[3]-1;
-    uTIndex = uTIndexStart-1;
 
     CornerB += ip[uStart].position.xyz * fOWt;
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2 + 1, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2 + 1, index );
+	CornerN += ip[uStart].normal * fOWt;
 
     // We're done with the walk now.  Now we need to add the contributions of the original subd quad.
     CornerB += ip[MOD4(index+1)].position.xyz * fEWt;
     CornerB += ip[MOD4(index+2)].position.xyz * fOWt;
     CornerB += ip[MOD4(index+3)].position.xyz * fEWt;
+
+	CornerN += ip[MOD4(index+1)].normal * fEWt;
+    CornerN += ip[MOD4(index+2)].normal * fOWt;
+    CornerN += ip[MOD4(index+3)].normal * fEWt;
     
-    uTIndex = 0 + (index&1)*(Val[index]-1);
-    uStart = MOD4(index+1);
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2, index );
-    
-    uStart = MOD4(index+2);
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2 + 1, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2 + 1, index );
-
-    uStart = MOD4(index+3);
-    uTIndex = (uTIndex+1)%Val[index];
-
-    //CornerU += ip[uStart].vPosition * TANM( ( uTIndex % Val[index] ) * 2, index );
-    //CornerV += ip[uStart].vPosition * TANM( ( ( uTIndex + uV ) % Val[index] ) * 2, index );
-
     // Normalize the corner weights
     CornerB *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] ); // normalize
-
-    // fixup signs from directional derivatives...
-    //if( !((index - 1) & 2) ) // 1 and 2
-    //    CornerU *= -1;
-
-    //if( index >= 2 ) // 2 and 3
-    //    CornerV *= -1;
+	CornerN *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] );
 }
 
 //--------------------------------------------------------------------------------------
@@ -747,16 +694,68 @@ float3 ComputeEdgeVertex( in uint index /* 0-7 */,
     return vRetVal;
 }
 
+float3 ComputeEdgeNormal( in uint index /* 0-7 */, 
+                          const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
+                          const in uint Val[4], 
+                          const in uint Pref[4] )
+{
+    float val1 = 2 * Val[0] + 10;
+    float val2 = 2 * Val[1] + 10;
+    float val13 = 2 * Val[3] + 10;
+    float val14 = 2 * Val[2] + 10;
+    float val4 = val1;
+    float val8 = val13;
+    float val7 = val2;
+    float val11 = val14;
+    
+    float3 vRetVal = float3(0,0,0);
+    switch( index )
+    {
+    // Horizontal
+    case 0:
+        vRetVal = (Val[0]*2*ip[0].normal + 4*ip[1].normal + ip[2].normal + ip[3].normal*2 +
+              2*ip[Pref[0]-1].normal + ip[Pref[0]].normal) / val1;
+        break;
+    case 1:
+        vRetVal = (4*ip[0].normal + Val[1]*2*ip[1].normal + ip[2].normal*2 + ip[3].normal +
+              ip[Pref[0]-1].normal + 2*ip[Pref[0]].normal) / val2;
+        break;
+    case 2:
+        vRetVal = (2*ip[0].normal + ip[1].normal + 4*ip[2].normal + ip[3].normal*2*Val[3] +
+               2*ip[Pref[2]].normal + ip[Pref[2]-1].normal) / val13;
+        break;
+    case 3:
+        vRetVal = (ip[0].normal + 2*ip[1].normal + Val[2]*2*ip[2].normal + ip[3].normal*4 +
+               ip[Pref[2]].normal + 2*ip[Pref[2]-1].normal) / val14;
+        break;
+    // Vertical
+    case 4:
+        vRetVal = (Val[0]*2*ip[0].normal + 2*ip[1].normal + ip[2].normal + ip[3].normal*4 +
+              2*ip[4].normal + ip[Pref[3]-1].normal) / val4;
+        break;
+    case 5:
+        vRetVal = (4*ip[0].normal + ip[1].normal + 2*ip[2].normal + ip[3].normal*2*Val[3] +
+              ip[4].normal + 2*ip[Pref[3]-1].normal) / val8;
+        break;
+    case 6:
+        vRetVal = (2*ip[0].normal + Val[1]*2*ip[1].normal + 4*ip[2].normal + ip[3].normal +
+              2*ip[Pref[1]-1].normal + ip[Pref[1]].normal) / val7;
+        break;
+    case 7:
+        vRetVal = (ip[0].normal + 4*ip[1].normal + Val[2]*2*ip[2].normal + 2*ip[3].normal +
+               ip[Pref[1]-1].normal + 2*ip[Pref[1]].normal) / val11;
+        break;
+    }
+        
+    return vRetVal;
+}
+
 struct HS_CONSTANT_ACC_OUTPUT
 {
     float Edges[4]			: SV_TessFactor;
     float Inside[2]			: SV_InsideTessFactor;
     
-    float3 vTangent[4]		: TANGENT;
-    float2 vUV[4]			: TEXCOORD;
-    float3 vTanUCorner[4]	: TANUCORNER;
-    float3 vTanVCorner[4]	: TANVCORNER;
-    float4 vCWts			: TANWEIGHTS;
+	float2 texcoords[4]		: TEXCOORD;
 };
 
 HS_CONSTANT_ACC_OUTPUT HSCONSTANT_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip,
@@ -769,83 +768,16 @@ HS_CONSTANT_ACC_OUTPUT HSCONSTANT_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip,
     Output.Edges[0] = Output.Edges[1] = Output.Edges[2] = Output.Edges[3] = TessAmount;
     Output.Inside[0] = Output.Inside[1] = TessAmount;
     
-    Output.vTangent[0] = ip[0].tangent;
-    Output.vTangent[1] = ip[1].tangent;
-    Output.vTangent[2] = ip[2].tangent;
-    Output.vTangent[3] = ip[3].tangent;
-    
-    Output.vUV[0] = ip[0].texcoord;
-    Output.vUV[1] = ip[1].texcoord;
-    Output.vUV[2] = ip[2].texcoord;
-    Output.vUV[3] = ip[3].texcoord;
-    
-    // Compute part of our tangent patch here
-    uint Val[4];
-    uint Prefixes[4];
-    LoadValenceAndPrefixData( PatchID, Val, Prefixes );
+    Output.texcoords[0] = ip[0].texcoord;
+    Output.texcoords[1] = ip[1].texcoord;
+    Output.texcoords[2] = ip[2].texcoord;
+    Output.texcoords[3] = ip[3].texcoord;
 
-    [unroll]
-    for( int i=0; i<4; i++ )
-    {
-        float3 CornerB, CornerU, CornerV;
-        ComputeCornerVertex( i, CornerB, CornerU, CornerV, ip, Val, Prefixes );
-        Output.vTanUCorner[i] = CornerU;
-        Output.vTanVCorner[i] = CornerV;
-    }
-    
-    float fCWts[4];
-    Output.vCWts.x = ValCoeff[ Val[0]-3 ];
-    Output.vCWts.y = ValCoeff[ Val[1]-3 ];
-    Output.vCWts.z = ValCoeff[ Val[2]-3 ];
-    Output.vCWts.w = ValCoeff[ Val[3]-3 ];
-    
-    return Output;
-}
-
-HS_CONSTANT_ACC_OUTPUT HSCONSTANT_ACC_4444( InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip,
-                                                 uint PatchID : SV_PrimitiveID )
-{	
-    HS_CONSTANT_ACC_OUTPUT Output;
-    
-    float TessAmount = TessFactor;
-
-    Output.Edges[0] = Output.Edges[1] = Output.Edges[2] = Output.Edges[3] = TessAmount;
-    Output.Inside[0] = Output.Inside[1] = TessAmount;
-    
-    Output.vTangent[0] = ip[0].tangent;
-    Output.vTangent[1] = ip[1].tangent;
-    Output.vTangent[2] = ip[2].tangent;
-    Output.vTangent[3] = ip[3].tangent;
-    
-    Output.vUV[0] = ip[0].texcoord;
-    Output.vUV[1] = ip[1].texcoord;
-    Output.vUV[2] = ip[2].texcoord;
-    Output.vUV[3] = ip[3].texcoord;
-    
-    // Compute part of our tangent patch here
-    static const uint Val[4] = (uint[4])uint4(4,4,4,4);
-    static const uint Prefixes[4] = (uint[4])uint4(7,10,13,16);
-
-    [unroll]
-    for( int i=0; i<4; i++ )
-    {
-        float3 CornerB, CornerU, CornerV;
-        ComputeCornerVertex4444( i, CornerB, CornerU, CornerV, ip, Val, Prefixes );
-        Output.vTanUCorner[i] = CornerU;
-        Output.vTanVCorner[i] = CornerV;
-    }
-    
-    float fCWts[4];
-    Output.vCWts.x = ValCoeff[ Val[0]-3 ];
-    Output.vCWts.y = ValCoeff[ Val[1]-3 ];
-    Output.vCWts.z = ValCoeff[ Val[2]-3 ];
-    Output.vCWts.w = ValCoeff[ Val[3]-3 ];
-    
     return Output;
 }
 
 //--------------------------------------------------------------------------------------
-// HS for SubDToBezier.  This outputcontrolpoints(16) specifies that we will produce
+// HS for ACC.  This outputcontrolpoints(16) specifies that we will produce
 // 16 control points.  Therefore this function will be invoked 16x, one for each output
 // control point.
 //
@@ -870,13 +802,9 @@ BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p,
     uint Prefixes[4];
     LoadValenceAndPrefixData( PatchID, Val, Prefixes );
     
-	//static const uint Val[4] = (uint[4])uint4(4,4,4,4);
-    //static const uint Prefixes[4] = (uint[4])uint4(7,10,13,16);
-
     float3 CornerB = float3(0,0,0);
-    float3 CornerU = float3(0,0,0);
-    float3 CornerV = float3(0,0,0);
-    
+    float3 CornerN = float3(0,0,0);
+
     BEZIER_CONTROL_POINT Output;
     Output.position = float3(0,0,0);
     
@@ -887,59 +815,75 @@ BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p,
     // Interior vertices
     case 5:
         Output.position = ComputeInteriorVertex( 0, Val, p ).xyz;
+		Output.normal = ComputeInteriorNormal( 0, Val, p );
         break;
     case 6:
         Output.position = ComputeInteriorVertex( 1, Val, p ).xyz;
+		Output.normal = ComputeInteriorNormal( 1, Val, p );
         break;
     case 10:
         Output.position = ComputeInteriorVertex( 2, Val, p ).xyz;
+		Output.normal = ComputeInteriorNormal( 2, Val, p );
         break;
     case 9:
         Output.position = ComputeInteriorVertex( 3, Val, p ).xyz;
+		Output.normal = ComputeInteriorNormal( 3, Val, p );
         break;
         
     // Corner vertices
     case 0:
-        ComputeCornerVertex( 0, CornerB, CornerU, CornerV, p, Val, Prefixes );
+        ComputeCorner( 0, CornerB, CornerN, p, Val, Prefixes );
         Output.position = CornerB;
+		Output.normal = CornerN;
         break;
     case 3:
-        ComputeCornerVertex( 1, CornerB, CornerU, CornerV, p, Val, Prefixes );
+        ComputeCorner( 1, CornerB, CornerN, p, Val, Prefixes );
         Output.position = CornerB;
+		Output.normal = CornerN;
         break;
     case 15:
-        ComputeCornerVertex( 2, CornerB, CornerU, CornerV, p, Val, Prefixes );
+        ComputeCorner( 2, CornerB, CornerN, p, Val, Prefixes );
         Output.position = CornerB;
+		Output.normal = CornerN;
         break;
     case 12:
-        ComputeCornerVertex( 3, CornerB, CornerU, CornerV, p, Val, Prefixes );
+        ComputeCorner( 3, CornerB, CornerN, p, Val, Prefixes );
         Output.position = CornerB;
+		Output.normal = CornerN;
         break;
         
     // Edge vertices
     case 1:
         Output.position = ComputeEdgeVertex( 0, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 0, p, Val, Prefixes );
         break;
     case 2:
         Output.position = ComputeEdgeVertex( 1, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 1, p, Val, Prefixes );
         break;
     case 13:
         Output.position = ComputeEdgeVertex( 2, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 2, p, Val, Prefixes );
         break;
     case 14:
         Output.position = ComputeEdgeVertex( 3, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 3, p, Val, Prefixes );
         break;
     case 4:
         Output.position = ComputeEdgeVertex( 4, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 4, p, Val, Prefixes );
         break;
     case 8:
         Output.position = ComputeEdgeVertex( 5, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 5, p, Val, Prefixes );
         break;
     case 7:
         Output.position = ComputeEdgeVertex( 6, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 6, p, Val, Prefixes );
         break;
     case 11:
         Output.position = ComputeEdgeVertex( 7, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 7, p, Val, Prefixes );
         break;
     }
     
@@ -954,7 +898,7 @@ BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p,
 [partitioning("integer")]
 [outputtopology("triangle_cw")]
 [outputcontrolpoints(16)]
-[patchconstantfunc("HSCONSTANT_ACC_4444")]
+[patchconstantfunc("HSCONSTANT_ACC")]
 BEZIER_CONTROL_POINT HS_ACC_4444(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p, 
                                  uint i : SV_OutputControlPointID,
                                  uint PatchID : SV_PrimitiveID)
@@ -964,9 +908,8 @@ BEZIER_CONTROL_POINT HS_ACC_4444(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p,
     static const uint Prefixes[4] = (uint[4])uint4(7,10,13,16);
     
     float3 CornerB = float3(0,0,0);
-    float3 CornerU = float3(0,0,0);
-    float3 CornerV = float3(0,0,0);
-    
+    float3 CornerN = float3(0,0,0);
+
     BEZIER_CONTROL_POINT Output;
     Output.position = float3(0,0,0);
     
@@ -977,62 +920,77 @@ BEZIER_CONTROL_POINT HS_ACC_4444(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p,
     // Interior vertices
     case 5:
         Output.position = ComputeInteriorVertex( 0, Val, p ).xyz;
+		Output.normal = ComputeInteriorNormal( 0, Val, p );
         break;
     case 6:
         Output.position = ComputeInteriorVertex( 1, Val, p ).xyz;
+		Output.normal = ComputeInteriorNormal( 1, Val, p );
         break;
     case 10:
         Output.position = ComputeInteriorVertex( 2, Val, p ).xyz;
+		Output.normal = ComputeInteriorNormal( 2, Val, p );
         break;
     case 9:
         Output.position = ComputeInteriorVertex( 3, Val, p ).xyz;
+		Output.normal = ComputeInteriorNormal( 3, Val, p );
         break;
         
     // Corner vertices
     case 0:
-        ComputeCornerVertex4444( 0, CornerB, CornerU, CornerV, p, Val, Prefixes );
+        ComputeCorner4444( 0, CornerB, CornerN, p, Val, Prefixes );
         Output.position = CornerB;
+		Output.normal = CornerN;
         break;
     case 3:
-        ComputeCornerVertex4444( 1, CornerB, CornerU, CornerV, p, Val, Prefixes );
+        ComputeCorner4444( 1, CornerB, CornerN, p, Val, Prefixes );
         Output.position = CornerB;
+		Output.normal = CornerN;
         break;
     case 15:
-        ComputeCornerVertex4444( 2, CornerB, CornerU, CornerV, p, Val, Prefixes );
+        ComputeCorner4444( 2, CornerB, CornerN, p, Val, Prefixes );
         Output.position = CornerB;
+		Output.normal = CornerN;
         break;
     case 12:
-        ComputeCornerVertex4444( 3, CornerB, CornerU, CornerV, p, Val, Prefixes );
+        ComputeCorner4444( 3, CornerB, CornerN, p, Val, Prefixes );
         Output.position = CornerB;
+		Output.normal = CornerN;
         break;
         
     // Edge vertices
     case 1:
         Output.position = ComputeEdgeVertex( 0, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 0, p, Val, Prefixes );
         break;
     case 2:
         Output.position = ComputeEdgeVertex( 1, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 1, p, Val, Prefixes );
         break;
     case 13:
         Output.position = ComputeEdgeVertex( 2, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 2, p, Val, Prefixes );
         break;
     case 14:
         Output.position = ComputeEdgeVertex( 3, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 3, p, Val, Prefixes );
         break;
     case 4:
         Output.position = ComputeEdgeVertex( 4, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 4, p, Val, Prefixes );
         break;
     case 8:
         Output.position = ComputeEdgeVertex( 5, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 5, p, Val, Prefixes );
         break;
     case 7:
         Output.position = ComputeEdgeVertex( 6, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 6, p, Val, Prefixes );
         break;
     case 11:
         Output.position = ComputeEdgeVertex( 7, p, Val, Prefixes );
+		Output.normal = ComputeEdgeNormal( 7, p, Val, Prefixes );
         break;
     }
-    
     return Output;
 }
 
@@ -1050,57 +1008,20 @@ DS_OUTPUT DS_ACC( HS_CONSTANT_ACC_OUTPUT input,
 											 bezpatch[12].position, bezpatch[13].position, bezpatch[14].position, bezpatch[15].position,
 											 BasisU,				BasisV);
 
-    float3 TanU[16];
-    float3 TanV[16];
-    //CreatTangentPatches( input, bezpatch, TanU, TanV );
-    //float3 Tangent = EvaluateBezierTan( TanU, BasisU, BasisV );
-    //float3 BiTangent = EvaluateBezierTan( TanV, BasisU, BasisV );
-    
-    // To see what the patch looks like without using the tangent patches to fix the normals, uncomment this section
-    
-    float4 dBasisU = dBernsteinBasisBiCubic( UV.x );
-    float4 dBasisV = dBernsteinBasisBiCubic( UV.y );
-
-    float4 Tangent	= EvaluateBezierBiCubic( bezpatch[0].position,  bezpatch[1].position,  bezpatch[2].position,  bezpatch[3].position,
-											 bezpatch[4].position,  bezpatch[5].position,  bezpatch[6].position,  bezpatch[7].position,
-											 bezpatch[8].position,  bezpatch[9].position,  bezpatch[10].position, bezpatch[11].position,
-											 bezpatch[12].position, bezpatch[13].position, bezpatch[14].position, bezpatch[15].position,
-											 dBasisU,				BasisV);
-    
-	float4 BiTangent= EvaluateBezierBiCubic( bezpatch[0].position,  bezpatch[1].position,  bezpatch[2].position,  bezpatch[3].position,
-											 bezpatch[4].position,  bezpatch[5].position,  bezpatch[6].position,  bezpatch[7].position,
-											 bezpatch[8].position,  bezpatch[9].position,  bezpatch[10].position, bezpatch[11].position,
-											 bezpatch[12].position, bezpatch[13].position, bezpatch[14].position, bezpatch[15].position,
-											 BasisU,				dBasisV);
-    
-    float3 norm = normalize( cross( Tangent, BiTangent ) ).xyz;
+	float3 Normal	= EvaluateBezierBiCubic( bezpatch[0].normal,  bezpatch[1].normal,  bezpatch[2].normal,  bezpatch[3].normal,
+											 bezpatch[4].normal,  bezpatch[5].normal,  bezpatch[6].normal,  bezpatch[7].normal,
+											 bezpatch[8].normal,  bezpatch[9].normal,  bezpatch[10].normal, bezpatch[11].normal,
+											 bezpatch[12].normal, bezpatch[13].normal, bezpatch[14].normal, bezpatch[15].normal,
+											 BasisU,				BasisV);
 
     DS_OUTPUT Output;
-    Output.normal = norm;
-    
-    // Evalulate the tangent vectors through bilinear interpolation.
-    // These tangents are the texture-space tangents.  They should not be confused with the parametric
-    // tangents that we use to get the normals for the bicubic patch.
-    //float3 TextureTanU0 = input.vTangent[0];
-    //float3 TextureTanU1 = input.vTangent[1];
-    //float3 TextureTanU2 = input.vTangent[2];
-    //float3 TextureTanU3 = input.vTangent[3];
-
-    //float3 UVbottom = lerp( TextureTanU0, TextureTanU1, UV.x );
-    //float3 UVtop = lerp( TextureTanU3, TextureTanU2, UV.x );
-    //float3 Tan = lerp( UVbottom, UVtop, UV.y );
-
-    //Output.vTangent = Tan;
-
-    // This is an optimization.  We assume that the UV mapping of the mesh will result in a "relatively" orthogonal
-    // tangent basis.  If we assume this, then we can avoid fetching and bilerping the BiTangent along with the tangent.
-    //Output.vBiTangent = cross( Norm, Tan );
+    Output.normal = Normal;
 
     // bilerp the texture coordinates    
-    float2 tex0 = input.vUV[0];
-    float2 tex1 = input.vUV[1];
-    float2 tex2 = input.vUV[2];
-    float2 tex3 = input.vUV[3];
+    float2 tex0 = input.texcoords[0];
+    float2 tex1 = input.texcoords[1];
+    float2 tex2 = input.texcoords[2];
+    float2 tex3 = input.texcoords[3];
         
     float2 bottom = lerp( tex0, tex1, UV.x );
     float2 top = lerp( tex3, tex2, UV.x );

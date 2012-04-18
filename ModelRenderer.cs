@@ -73,7 +73,7 @@ namespace SubdivisionRenderer
 
 		private void CompileShaders(string texturePath, string shaderPath)
 		{
-			_shaderEffect = new Effect(_device, ShaderBytecode.CompileFromFile(shaderPath, "fx_5_0", ShaderFlags.Debug, EffectFlags.None));
+			_shaderEffect = new Effect(_device, ShaderBytecode.CompileFromFile(shaderPath, "fx_5_0", ShaderFlags.None, EffectFlags.None));
 			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int) _currentShader).GetPassByIndex(0);
 			_inputLayout = new InputLayout(_device, _shaderEffectPass.Description.Signature, VertexShaderInput.InputLayout);
 
@@ -190,7 +190,6 @@ namespace SubdivisionRenderer
 				point => new VertexShaderInput {
 					Position = Model.Vertices[point.PositionIndex],
 					Normal = Model.Normals[point.NormalIndex],
-					Tangent = new Vector3(0, 0, 0),
 					TexCoord = Model.Textures.Count == 0 ? new Vector2(0.5f, 0.5f) : Model.Textures[point.TextureIndex]
 				}).ToList();
 

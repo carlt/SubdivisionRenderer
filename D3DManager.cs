@@ -31,7 +31,7 @@ namespace SubdivisionRenderer
 				Usage = Usage.RenderTargetOutput
 			};
 
-			Device.CreateWithSwapChain(DriverType.Hardware, DeviceCreationFlags.Debug, swapChainDescription, out Device, out SwapChain);
+			Device.CreateWithSwapChain(DriverType.Hardware, DeviceCreationFlags.None, swapChainDescription, out Device, out SwapChain);
 
 			SwapChain.GetParent<Factory>().SetWindowAssociation(renderForm.Handle, WindowAssociationFlags.IgnoreAll);
 
