@@ -1109,7 +1109,7 @@ DS_OUTPUT DS_ACC( HS_CONSTANT_ACC_OUTPUT input,
     
 	Output.normal   = mul(Output.normal, (float3x3) World);
     Output.position = mul(WorldPos, WorldViewProj );
-    Output.posworld = WorldPos.xyz;
+    Output.posworld = mul(WorldPos.xyz, (float3x3) World);
     
     return Output;    
 }
