@@ -109,9 +109,7 @@ namespace SubdivisionRenderer
 		private void SetupAccPatches()
 		{
 			foreach (var patch in AccPatches)
-			{
 				ConditionPatch(patch);
-			}
 		}
 		
 		private void ConditionPatch(AccPatch patch)

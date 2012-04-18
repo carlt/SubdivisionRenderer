@@ -15,7 +15,7 @@ namespace SubdivisionRenderer
 		public RenderTargetView RenderTargetView;
 		public DepthStencilView DepthStencilView;
 		
-		private readonly CullMode CullMode = CullMode.None;
+		private readonly CullMode CullMode = CullMode.Back;
 
 		public D3DManager(Form renderForm)
 		{

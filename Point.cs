@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace SubdivisionRenderer
+﻿namespace SubdivisionRenderer
 {
 	public struct Point
 	{
@@ -23,19 +21,6 @@ namespace SubdivisionRenderer
 		public bool SamePosition(Point x)
 		{
 			return x.PositionIndex == PositionIndex;
-		}
-	}
-
-	public class PointPositionComparer : IEqualityComparer<Point>
-	{
-		public bool Equals(Point x, Point y)
-		{
-			return x.PositionIndex == y.PositionIndex;
-		}
-
-		public int GetHashCode(Point obj)
-		{
-			return obj.PositionIndex;
 		}
 	}
 }

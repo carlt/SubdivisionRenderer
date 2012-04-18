@@ -12,13 +12,6 @@ namespace SubdivisionRenderer
 		public Vector3 Normal;
 		public Vector2 TexCoord;
 
-		public VertexShaderInput(Vector4 position, Vector3 normal, Vector2 texCoord)
-		{
-			Position = position;
-			Normal = normal;
-			TexCoord = texCoord;
-		}
-
 		public static readonly InputElement[] InputLayout = {
 			new InputElement("POSITION", 0, Format.R32G32B32A32_Float, 0, 0),
 			new InputElement("NORMAL", 0, Format.R32G32B32_Float, Vector4.SizeInBytes, 0),

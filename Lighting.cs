@@ -21,8 +21,6 @@ namespace SubdivisionRenderer
 		
 		public static Vector4 DirectionalLight2Color = Color.Gray.ToVector();
 		public static Vector3 DirectionalLight2Direction = Vector3.Normalize(new Vector3(-1.5f, -1.5f, 2f));
-
-		
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
