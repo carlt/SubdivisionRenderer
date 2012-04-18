@@ -25,7 +25,7 @@ namespace SubdivisionRenderer
 			new InputElement("POSITION", 0, Format.R32G32B32A32_Float, 0, 0),
 			new InputElement("NORMAL", 0, Format.R32G32B32_Float, Vector4.SizeInBytes, 0),
 			new InputElement("TANGENT", 0, Format.R32G32B32_Float, Vector4.SizeInBytes + Vector3.SizeInBytes), 
- 			new InputElement("TEXCOORD", 0, Format.R32G32_Float, Vector4.SizeInBytes + Vector3.SizeInBytes * 2, 0) 
+			new InputElement("TEXCOORD", 0, Format.R32G32_Float, Vector4.SizeInBytes + Vector3.SizeInBytes * 2, 0) 
 		};
 
 		public static readonly int SizeInBytes = Marshal.SizeOf(typeof(VertexShaderInput));

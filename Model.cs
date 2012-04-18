@@ -7,21 +7,21 @@ using SlimDX;
 
 namespace SubdivisionRenderer
 {
-    public class Model 
-    {
-    	public const int MaxValence = 16;
+	public class Model 
+	{
+		public const int MaxValence = 16;
 
 		public List<Vector4> Vertices { get; private set; }
 		public List<Vector3> Normals { get; private set; }
 		public List<Vector2> Textures { get; private set; }
-        public List<Face> Faces { get; private set; }
+		public List<Face> Faces { get; private set; }
 
-    	private readonly List<AccPatch> _accPatches = new List<AccPatch>();
+		private readonly List<AccPatch> _accPatches = new List<AccPatch>();
 		public readonly List<AccPatch> AccRegularPatches = new List<AccPatch>();
 		public readonly List<AccPatch> AccExtraordinaryPatches = new List<AccPatch>();
 
 		public Model(string path)
-        {
+		{
 			Vertices = new List<Vector4>();
 			Normals = new List<Vector3>();
 			Textures = new List<Vector2>();
@@ -29,11 +29,11 @@ namespace SubdivisionRenderer
 
 			Load(path);
 			SetupAccPatches();
-        }
+		}
 
-        private void Load(string path)
-        {
-            var numberRegex = new Regex(@"-?[\d]+(?:\.[\d]*)?(e[-|+]?\d+)?", RegexOptions.IgnoreCase);
+		private void Load(string path)
+		{
+			var numberRegex = new Regex(@"-?[\d]+(?:\.[\d]*)?(e[-|+]?\d+)?", RegexOptions.IgnoreCase);
 			var faceRegex = new Regex(@"(\d+)/([\d]*)/([\d]*)", RegexOptions.IgnoreCase);
 
 			Vertices.Clear();
@@ -41,60 +41,60 @@ namespace SubdivisionRenderer
 			Textures.Clear();
 			Faces.Clear();
 
-            foreach (var line in File.ReadLines(path).Where(line => numberRegex.IsMatch(line)))
-            {
-                var matches = numberRegex.Matches(line);
-                
-                if (line.StartsWith("v "))
-                {
-                    if (matches.Count != 3)
-                        throw new FileLoadException("Error parsing vertices.");
+			foreach (var line in File.ReadLines(path).Where(line => numberRegex.IsMatch(line)))
+			{
+				var matches = numberRegex.Matches(line);
+				
+				if (line.StartsWith("v "))
+				{
+					if (matches.Count != 3)
+						throw new FileLoadException("Error parsing vertices.");
 
-                    Vertices.Add(
-                        new Vector4 {
-                            X = float.Parse(matches[0].Value),
-                            Y = float.Parse(matches[1].Value),
-                            Z = float.Parse(matches[2].Value),
+					Vertices.Add(
+						new Vector4 {
+							X = float.Parse(matches[0].Value),
+							Y = float.Parse(matches[1].Value),
+							Z = float.Parse(matches[2].Value),
 							W = 1f
-                        });
-                }
-                else if (line.StartsWith("vt "))
-                {
-                    if (matches.Count != 2)
-                        throw new FileLoadException("Error parsing textures.");
+						});
+				}
+				else if (line.StartsWith("vt "))
+				{
+					if (matches.Count != 2)
+						throw new FileLoadException("Error parsing textures.");
 
-                    Textures.Add(
-                        new Vector2 {
-                            X = float.Parse(matches[0].Value),
-                            Y = float.Parse(matches[1].Value)
-                        });
-                } 
-                else if (line.StartsWith("vn "))
-                {
-                    if (matches.Count != 3)
-                        throw new FileLoadException("Error parsing normals.");
+					Textures.Add(
+						new Vector2 {
+							X = float.Parse(matches[0].Value),
+							Y = float.Parse(matches[1].Value)
+						});
+				} 
+				else if (line.StartsWith("vn "))
+				{
+					if (matches.Count != 3)
+						throw new FileLoadException("Error parsing normals.");
 
-                    Normals.Add(
-                        Vector3.Normalize(new Vector3 {
-                            X = float.Parse(matches[0].Value),
-                            Y = float.Parse(matches[1].Value),
-                            Z = float.Parse(matches[2].Value)
-                        }));
-                }
-                else if (line.StartsWith("f "))
-                {
-                	matches = faceRegex.Matches(line);
+					Normals.Add(
+						Vector3.Normalize(new Vector3 {
+							X = float.Parse(matches[0].Value),
+							Y = float.Parse(matches[1].Value),
+							Z = float.Parse(matches[2].Value)
+						}));
+				}
+				else if (line.StartsWith("f "))
+				{
+					matches = faceRegex.Matches(line);
 
-                    var face = new Face();
-                    foreach (var i in Enumerable.Range(0, 4))
-                    {
+					var face = new Face();
+					foreach (var i in Enumerable.Range(0, 4))
+					{
 						face.Points.Add(
 							new Point {
-						        PositionIndex = int.Parse(matches[i].Groups[1].Value) - 1,
+								PositionIndex = int.Parse(matches[i].Groups[1].Value) - 1,
 								TextureIndex = matches[i].Groups[2].Value == String.Empty ? 0 : int.Parse(matches[i].Groups[2].Value) - 1,
 								NormalIndex = int.Parse(matches[i].Groups[3].Value) - 1
-						    });
-                    }
+							});
+					}
 
 					_accPatches.Add(
 						new AccPatch {
@@ -103,10 +103,10 @@ namespace SubdivisionRenderer
 							Valences = new List<int>()
 						});
 
-                    Faces.Add(face);
-                }
-           } 
-        }
+					Faces.Add(face);
+				}
+		   } 
+		}
 
 		private void SetupAccPatches()
 		{
@@ -204,5 +204,5 @@ namespace SubdivisionRenderer
 					 p.Points.Take(4).Any(pb => pb.PositionIndex == b.PositionIndex) &&
 					!p.Points.Take(4).Any(pc => pc.PositionIndex == c.PositionIndex));
 		}
-    }
+	}
 }

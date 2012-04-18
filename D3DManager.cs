@@ -10,8 +10,8 @@ namespace SubdivisionRenderer
 {
 	class D3DManager : IDisposable
 	{
-		public Device Device;
-		public SwapChain SwapChain;
+		public readonly Device Device;
+		public readonly SwapChain SwapChain;
 		public RenderTargetView RenderTargetView;
 		public DepthStencilView DepthStencilView;
 		

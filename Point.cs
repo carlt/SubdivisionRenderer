@@ -2,11 +2,11 @@
 
 namespace SubdivisionRenderer
 {
-    public struct Point
-    {
+	public struct Point
+	{
 		public int PositionIndex;
-        public int NormalIndex;
-        public int TextureIndex;
+		public int NormalIndex;
+		public int TextureIndex;
 
 		public static bool operator ==(Point x, Point y)
 		{
@@ -15,16 +15,16 @@ namespace SubdivisionRenderer
 				&& x.TextureIndex == y.TextureIndex;
 		}
 
-    	public static bool operator !=(Point x, Point y)
-    	{
-    		return !(x == y);
-    	}
+		public static bool operator !=(Point x, Point y)
+		{
+			return !(x == y);
+		}
 
 		public bool SamePosition(Point x)
 		{
 			return x.PositionIndex == PositionIndex;
 		}
-    }
+	}
 
 	public class PointPositionComparer : IEqualityComparer<Point>
 	{

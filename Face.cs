@@ -3,14 +3,14 @@ using System.Linq;
 
 namespace SubdivisionRenderer
 {
-    public class Face
-    {
-        public List<Point> Points; 
+	public class Face
+	{
+		public List<Point> Points; 
 
-        public Face()
-        {
+		public Face()
+		{
 			Points = new List<Point>();
-        }
+		}
 
 		public bool HasEdge(Point a, Point b)
 		{
@@ -33,7 +33,7 @@ namespace SubdivisionRenderer
 		{
 			return Points.FirstOrDefault(p => f.Points.Any(fp => fp.PositionIndex == p.PositionIndex));
 		}
-    }
+	}
 
 	public class FaceComparer : IEqualityComparer<Face>
 	{
