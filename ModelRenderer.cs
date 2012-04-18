@@ -43,15 +43,12 @@ namespace SubdivisionRenderer
 		private EffectVectorVariable _cameraPosition;
 		private EffectScalarVariable _flatShading;
 
-		private EffectConstantBuffer _tanMaskValenceCoefficients;
 		private EffectResourceVariable _valencePrefixResource;
 		private ShaderResourceView _valencePrefixView;
 
 		private Buffer _vertexBuffer;
 		private Buffer _indexBuffer;
-		private Buffer _accRegularPatchIndexBuffer;
-		private Buffer _accExtraordinaryPatchIndexBuffer;
-		private Buffer _tanMaskValenceCoeffBuffer;
+		private Buffer _accIndexBuffer;
 		private Buffer _valencePrefixBuffer;
 
 		public ModelRenderer(Device device, Model model)
@@ -65,10 +62,7 @@ namespace SubdivisionRenderer
 		public void ChangeShader(ShaderMode shader)
 		{
 			_currentShader = shader;
-			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int) shader).GetPassByIndex(0);
-			
-			// ACC = Diff layout
-			//_inputLayout = new InputLayout(_device, _shaderEffectPass.Description.Signature, VertexShaderInput.InputLayout);
+			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int) shader).GetPassByIndex(0);		
 		}
 
 		private void CompileShaders(string texturePath, string shaderPath)
@@ -96,7 +90,6 @@ namespace SubdivisionRenderer
 			_cameraPosition = _shaderEffect.GetVariableByName("Eye").AsVector();
 			_flatShading = _shaderEffect.GetVariableByName("FlatShading").AsScalar();
 
-			_tanMaskValenceCoefficients = _shaderEffect.GetConstantBufferByName("TangentStencilConstants").AsConstantBuffer();
 			_valencePrefixResource = _shaderEffect.GetVariableByName("ValencePrefixBuffer").AsResource();
 		}
 
@@ -107,7 +100,6 @@ namespace SubdivisionRenderer
 
 			if (_currentShader != ShaderMode.Acc)
 			{
-				// Bind Buffers
 				_device.ImmediateContext.InputAssembler.SetIndexBuffer(_indexBuffer, Format.R32_UInt, 0);
 				_device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.PatchListWith4ControlPoints;
 
@@ -119,21 +111,15 @@ namespace SubdivisionRenderer
 			}
 			else
 			{
-				_device.ImmediateContext.InputAssembler.SetIndexBuffer(_accRegularPatchIndexBuffer, Format.R32_UInt, 0);
+				_device.ImmediateContext.InputAssembler.SetIndexBuffer(_accIndexBuffer, Format.R32_UInt, 0);
 				_device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.PatchListWith32ControlPoints;
-				
-				SetRenderParameters(parameters);
-				_tanMaskValenceCoefficients.ConstantBuffer = _tanMaskValenceCoeffBuffer;
-
-				_shaderEffectPass.Apply(_device.ImmediateContext);
-				_device.ImmediateContext.DrawIndexed(Model.AccRegularPatches.Count * 32, 0, 0);
 
 				_valencePrefixResource.SetResource(_valencePrefixView);
-				_device.ImmediateContext.InputAssembler.SetIndexBuffer(_accExtraordinaryPatchIndexBuffer, Format.R32_UInt, 0);
+				SetRenderParameters(parameters);
 
-				_shaderEffect.GetTechniqueByIndex((int)_currentShader).GetPassByIndex(1).Apply(_device.ImmediateContext);
-				_device.ImmediateContext.DrawIndexed(Model.AccExtraordinaryPatches.Count * 32, 0, 0);
-
+				// Draw
+				_shaderEffectPass.Apply(_device.ImmediateContext);
+				_device.ImmediateContext.DrawIndexed(Model.AccPatches.Count * 32, 0, 0);
 			}
 		}
 
@@ -238,86 +224,37 @@ namespace SubdivisionRenderer
 		{
 			var allPoints = Model.Faces.SelectMany(f => f.Points).ToList();
 
-			var regularIndexBufferContents =
-				Model.AccRegularPatches
+			var accIndexBuffer =
+				Model.AccPatches
 					.SelectMany(p => p.Points.Pad(32))
 					.Select(p => Convert.ToUInt32(allPoints.FindIndex(point => point == p)))
 					.ToList();
 
-			var extraordinaryIndexBufferContents =
-				Model.AccExtraordinaryPatches
-					.SelectMany(p => p.Points.Pad(32))
-					.Select(p => Convert.ToUInt32(allPoints.FindIndex(point => point == p)))
-					.ToList();
+			// Acc index buffer
 
-			// Acc index buffer for regular patches
+			var stream = new DataStream(accIndexBuffer.Count * Marshal.SizeOf(typeof(uint)), true, true);
 
-			var stream = new DataStream(regularIndexBufferContents.Count * Marshal.SizeOf(typeof(uint)), true, true);
-
-			foreach (var indexInfo in regularIndexBufferContents)
+			foreach (var indexInfo in accIndexBuffer)
 				stream.Write(indexInfo);
 
 			stream.Position = 0;
 
-			_accRegularPatchIndexBuffer = new Buffer(_device, stream,
+			_accIndexBuffer = new Buffer(_device, stream,
 				new BufferDescription {
 					BindFlags = BindFlags.IndexBuffer,
 					CpuAccessFlags = CpuAccessFlags.None,
 					OptionFlags = ResourceOptionFlags.None,
-					SizeInBytes = regularIndexBufferContents.Count * Marshal.SizeOf(typeof(uint)),
+					SizeInBytes = accIndexBuffer.Count * Marshal.SizeOf(typeof(uint)),
 					Usage = ResourceUsage.Default
-				});
-
-			stream.Dispose();
-
-			// Acc index buffer for extraordinary patches
-
-			stream = new DataStream(extraordinaryIndexBufferContents.Count * Marshal.SizeOf(typeof(uint)), true, true);
-
-			foreach (var indexInfo in extraordinaryIndexBufferContents)
-				stream.Write(indexInfo);
-
-			stream.Position = 0;
-
-			_accExtraordinaryPatchIndexBuffer = new Buffer(_device, stream,
-				new BufferDescription {
-					BindFlags = BindFlags.IndexBuffer,
-					CpuAccessFlags = CpuAccessFlags.None,
-					OptionFlags = ResourceOptionFlags.None,
-					SizeInBytes = extraordinaryIndexBufferContents.Count * Marshal.SizeOf(typeof(uint)),
-					Usage = ResourceUsage.Default
-				});
-
-			stream.Dispose();
-
-			// Tangent mask and valence coefficient buffer
-
-			stream = new DataStream(AccConstantsTable.SizeInBytes(), true, true);
-
-			foreach (var tanMask in AccConstantsTable.TanM)
-				stream.Write(tanMask);
-
-			foreach (var valCoeff in AccConstantsTable.Ci)
-				stream.Write(valCoeff);
-
-			stream.Position = 0;
-
-			_tanMaskValenceCoeffBuffer = new Buffer(_device, stream,
-				new BufferDescription {
-					BindFlags = BindFlags.ConstantBuffer,
-					CpuAccessFlags = CpuAccessFlags.Write,
-					OptionFlags = ResourceOptionFlags.None,
-					SizeInBytes = AccConstantsTable.SizeInBytes(),
-					Usage = ResourceUsage.Dynamic
 				});
 
 			stream.Dispose();
 
 			// Valence[4] and Prefix[4] buffer
 
-			stream = new DataStream(Model.AccExtraordinaryPatches.Count * 8 * Marshal.SizeOf(typeof(uint)), true, true);
+			stream = new DataStream(Model.AccPatches.Count * 8 * Marshal.SizeOf(typeof(uint)), true, true);
 
-			foreach (var extraordinaryPatch in Model.AccExtraordinaryPatches)
+			foreach (var extraordinaryPatch in Model.AccPatches)
 			{
 				foreach (var valence in extraordinaryPatch.Valences)
 					stream.Write(Convert.ToUInt32(valence));
@@ -333,7 +270,7 @@ namespace SubdivisionRenderer
 					BindFlags = BindFlags.ShaderResource,
 					CpuAccessFlags = CpuAccessFlags.None,
 					OptionFlags = ResourceOptionFlags.None,
-					SizeInBytes = Model.AccExtraordinaryPatches.Count * 8 * Marshal.SizeOf(typeof(uint)),
+					SizeInBytes = Model.AccPatches.Count * 8 * Marshal.SizeOf(typeof(uint)),
 					Usage = ResourceUsage.Default
 				});
 
@@ -345,8 +282,8 @@ namespace SubdivisionRenderer
 					Dimension = ShaderResourceViewDimension.Buffer,
 					ElementOffset = 0,
 					FirstElement = 0,
-					ElementWidth = Model.AccExtraordinaryPatches.Count * 2,
-					ElementCount = Model.AccExtraordinaryPatches.Count * 2,
+					ElementWidth = Model.AccPatches.Count * 2,
+					ElementCount = Model.AccPatches.Count * 2,
 				});
 		}
 
@@ -363,12 +300,8 @@ namespace SubdivisionRenderer
 				_indexBuffer.Dispose();
 			if (_vertexBuffer != null)
 				_vertexBuffer.Dispose();
-			if (_accRegularPatchIndexBuffer != null)
-				_accRegularPatchIndexBuffer.Dispose();
-			if (_accExtraordinaryPatchIndexBuffer != null)
-				_accExtraordinaryPatchIndexBuffer.Dispose();
-			if (_tanMaskValenceCoeffBuffer != null)
-				_tanMaskValenceCoeffBuffer.Dispose();
+			if (_accIndexBuffer != null)
+				_accIndexBuffer.Dispose();
 			if (_valencePrefixBuffer != null)
 				_valencePrefixBuffer.Dispose();
 

@@ -1,6 +1,5 @@
 ﻿#define MAX_ACC_POINTS 32
 #define MOD4(x) ((x)&3)
-#define TANM(a,v) (TanM[Val[v] * 64 + (a)])
 
 //----------------------------------------------------------------------------------------
 // Standard Variables
@@ -25,18 +24,9 @@ float4		AmbientLight		: AmbientLightColor;
 float3		Eye					: CameraPosition;
 
 //----------------------------------------------------------------------------------------
-// Buffer storing precomputed valences and prefixes for extraordinary ACC patches
+// Buffer storing precomputed valences and prefixes for ACC patches
 //----------------------------------------------------------------------------------------
 Buffer<uint4> ValencePrefixBuffer : register( t1 );
-
-//----------------------------------------------------------------------------------------
-// Buffer storing precomputed tangent masks and valence coefficients
-//----------------------------------------------------------------------------------------
-cbuffer TangentStencilConstants : register( b0 )
-{
-	float TanM[1024];
-	float ValCoeff[16];
-}
 
 SamplerState stateLinear
 {
@@ -562,76 +552,6 @@ void ComputeCorner( uint index,
 	CornerN *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] );
 }
 
-void ComputeCorner4444( uint index, 
-                        out float3 CornerB, // Corner for the Bezier patch
-                        out float3 CornerN, // Corner for the normal patch
-                        const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
-                        const in uint Val[4], 
-                        const in uint Pref[4] )
-{
-    const float fOWt = 1;
-    const float fEWt = 4;
-
-    // Figure out where to start the walk by using the previous corner's prefix value
-    uint PrefIm1 = 0;
-    uint uStart = 4;
-    if( index )
-    {
-        PrefIm1 = Pref[index-1];
-        uStart = PrefIm1;
-    }
-    
-    // Calculate the N*N weight for the final value
-    CornerB = (Val[index]*Val[index])*ip[index].position.xyz; // n^2 part
-	CornerN = (Val[index]*Val[index])*ip[index].normal;
-
-    // Start the walk with the uStart prefix (the prefix of the corner before us)
-    CornerB += ip[uStart].position.xyz * fEWt;
-	CornerN += ip[uStart].normal * fEWt;
-
-    // Gather all vertices between the previous corner's prefix and our own prefix
-    // We'll do two at a time, since they always come in twos
-    while(uStart < Pref[index]-1) 
-    {
-        ++uStart;
-        CornerB += ip[uStart].position.xyz * fOWt;	
-        CornerN += ip[uStart].normal * fOWt;
-
-        ++uStart;
-        CornerB += ip[uStart].position.xyz * fEWt;
-		CornerN += ip[uStart].normal * fEWt;
-    }
-    ++uStart;
-
-    // Add in the last guy and make sure to wrap to the beginning if we're the last corner
-    if (index == 3)
-        uStart = 4; 
-    CornerB += ip[uStart].position.xyz * fOWt;
-	CornerN += ip[uStart].normal * fOWt;
-
-    // Add in the guy before the prefix as well
-    if (index)
-        uStart = PrefIm1-1;
-    else
-        uStart = Pref[3]-1;
-
-    CornerB += ip[uStart].position.xyz * fOWt;
-	CornerN += ip[uStart].normal * fOWt;
-
-    // We're done with the walk now.  Now we need to add the contributions of the original subd quad.
-    CornerB += ip[MOD4(index+1)].position.xyz * fEWt;
-    CornerB += ip[MOD4(index+2)].position.xyz * fOWt;
-    CornerB += ip[MOD4(index+3)].position.xyz * fEWt;
-
-	CornerN += ip[MOD4(index+1)].normal * fEWt;
-    CornerN += ip[MOD4(index+2)].normal * fOWt;
-    CornerN += ip[MOD4(index+3)].normal * fEWt;
-    
-    // Normalize the corner weights
-    CornerB *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] ); // normalize
-	CornerN *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] );
-}
-
 //--------------------------------------------------------------------------------------
 // Computes the edge vertices of the output bicubic patch.  The edge vertices
 // (1,2,4,7,8,11,13,14) are a weighted (by valence) combination of 6 interior and 1-ring
@@ -890,110 +810,6 @@ BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p,
     return Output;
 }
 
-//--------------------------------------------------------------------------------------
-// Specialised version for Regular (4,4,4,4) patches, this is much simpler and has less
-// branching compared to the general one above
-//--------------------------------------------------------------------------------------
-[domain("quad")]
-[partitioning("integer")]
-[outputtopology("triangle_cw")]
-[outputcontrolpoints(16)]
-[patchconstantfunc("HSCONSTANT_ACC")]
-BEZIER_CONTROL_POINT HS_ACC_4444(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p, 
-                                 uint i : SV_OutputControlPointID,
-                                 uint PatchID : SV_PrimitiveID)
-{
-    // Valences and prefixes are Constant for this case (4,4,4,4)
-    static const uint Val[4] = (uint[4])uint4(4,4,4,4);
-    static const uint Prefixes[4] = (uint[4])uint4(7,10,13,16);
-    
-    float3 CornerB = float3(0,0,0);
-    float3 CornerN = float3(0,0,0);
-
-    BEZIER_CONTROL_POINT Output;
-    Output.position = float3(0,0,0);
-    
-    // !! PERFORMANCE NOTE: As mentioned above, this switch statement generates
-    // inefficient code for the sake of readability.
-    switch( i )
-    {
-    // Interior vertices
-    case 5:
-        Output.position = ComputeInteriorVertex( 0, Val, p ).xyz;
-		Output.normal = ComputeInteriorNormal( 0, Val, p );
-        break;
-    case 6:
-        Output.position = ComputeInteriorVertex( 1, Val, p ).xyz;
-		Output.normal = ComputeInteriorNormal( 1, Val, p );
-        break;
-    case 10:
-        Output.position = ComputeInteriorVertex( 2, Val, p ).xyz;
-		Output.normal = ComputeInteriorNormal( 2, Val, p );
-        break;
-    case 9:
-        Output.position = ComputeInteriorVertex( 3, Val, p ).xyz;
-		Output.normal = ComputeInteriorNormal( 3, Val, p );
-        break;
-        
-    // Corner vertices
-    case 0:
-        ComputeCorner4444( 0, CornerB, CornerN, p, Val, Prefixes );
-        Output.position = CornerB;
-		Output.normal = CornerN;
-        break;
-    case 3:
-        ComputeCorner4444( 1, CornerB, CornerN, p, Val, Prefixes );
-        Output.position = CornerB;
-		Output.normal = CornerN;
-        break;
-    case 15:
-        ComputeCorner4444( 2, CornerB, CornerN, p, Val, Prefixes );
-        Output.position = CornerB;
-		Output.normal = CornerN;
-        break;
-    case 12:
-        ComputeCorner4444( 3, CornerB, CornerN, p, Val, Prefixes );
-        Output.position = CornerB;
-		Output.normal = CornerN;
-        break;
-        
-    // Edge vertices
-    case 1:
-        Output.position = ComputeEdgeVertex( 0, p, Val, Prefixes );
-		Output.normal = ComputeEdgeNormal( 0, p, Val, Prefixes );
-        break;
-    case 2:
-        Output.position = ComputeEdgeVertex( 1, p, Val, Prefixes );
-		Output.normal = ComputeEdgeNormal( 1, p, Val, Prefixes );
-        break;
-    case 13:
-        Output.position = ComputeEdgeVertex( 2, p, Val, Prefixes );
-		Output.normal = ComputeEdgeNormal( 2, p, Val, Prefixes );
-        break;
-    case 14:
-        Output.position = ComputeEdgeVertex( 3, p, Val, Prefixes );
-		Output.normal = ComputeEdgeNormal( 3, p, Val, Prefixes );
-        break;
-    case 4:
-        Output.position = ComputeEdgeVertex( 4, p, Val, Prefixes );
-		Output.normal = ComputeEdgeNormal( 4, p, Val, Prefixes );
-        break;
-    case 8:
-        Output.position = ComputeEdgeVertex( 5, p, Val, Prefixes );
-		Output.normal = ComputeEdgeNormal( 5, p, Val, Prefixes );
-        break;
-    case 7:
-        Output.position = ComputeEdgeVertex( 6, p, Val, Prefixes );
-		Output.normal = ComputeEdgeNormal( 6, p, Val, Prefixes );
-        break;
-    case 11:
-        Output.position = ComputeEdgeVertex( 7, p, Val, Prefixes );
-		Output.normal = ComputeEdgeNormal( 7, p, Val, Prefixes );
-        break;
-    }
-    return Output;
-}
-
 [domain("quad")]
 DS_OUTPUT DS_ACC( HS_CONSTANT_ACC_OUTPUT input, 
                         float2 UV : SV_DomainLocation,
@@ -1101,15 +917,6 @@ technique11 RenderPNQuads
 technique11 RenderACC
 {
 	pass P0
-	{
-		SetGeometryShader(0);
-
-		SetVertexShader	(CompileShader(vs_5_0, VS()));
-		SetHullShader	(CompileShader(hs_5_0, HS_ACC_4444()));
-		SetDomainShader	(CompileShader(ds_5_0, DS_ACC()));
-		SetPixelShader	(CompileShader(ps_5_0, PS()));
-	}
-	pass P1
 	{
 		SetGeometryShader(0);
 

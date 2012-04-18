@@ -16,9 +16,7 @@ namespace SubdivisionRenderer
 		public List<Vector2> Textures { get; private set; }
 		public List<Face> Faces { get; private set; }
 
-		private readonly List<AccPatch> _accPatches = new List<AccPatch>();
-		public readonly List<AccPatch> AccRegularPatches = new List<AccPatch>();
-		public readonly List<AccPatch> AccExtraordinaryPatches = new List<AccPatch>();
+		public readonly List<AccPatch> AccPatches = new List<AccPatch>();
 
 		public Model(string path)
 		{
@@ -96,7 +94,7 @@ namespace SubdivisionRenderer
 							});
 					}
 
-					_accPatches.Add(
+					AccPatches.Add(
 						new AccPatch {
 							Points = new List<Point>(face.Points),
 							Prefixes = new List<int>(),
@@ -110,14 +108,9 @@ namespace SubdivisionRenderer
 
 		private void SetupAccPatches()
 		{
-			foreach (var patch in _accPatches)
+			foreach (var patch in AccPatches)
 			{
 				ConditionPatch(patch);
-
-				if (patch.Valences.All(v => v == 4))
-					AccRegularPatches.Add(patch);
-				else
-					AccExtraordinaryPatches.Add(patch);
 			}
 		}
 		
@@ -199,7 +192,7 @@ namespace SubdivisionRenderer
 
 		private AccPatch FindQuadWithPointsAbNotC(Point a, Point b, Point c)
 		{
-			return _accPatches.First(
+			return AccPatches.First(
 				p => p.Points.Take(4).Any(pa => pa.PositionIndex == a.PositionIndex) &&
 					 p.Points.Take(4).Any(pb => pb.PositionIndex == b.PositionIndex) &&
 					!p.Points.Take(4).Any(pc => pc.PositionIndex == c.PositionIndex));
