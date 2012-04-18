@@ -115,6 +115,7 @@
     <None Include="Models\3_testshape.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="README.md" />
     <None Include="Textures\sphere_ao.dds">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
