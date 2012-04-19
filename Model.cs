@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Threading.Tasks;
 using SlimDX;
 
 namespace SubdivisionRenderer
@@ -121,8 +122,7 @@ namespace SubdivisionRenderer
 
 		private void SetupAccPatches()
 		{
-			foreach (var patch in AccPatches)
-				ConditionPatch(patch);
+			Parallel.ForEach(AccPatches, ConditionPatch);
 		}
 		
 		private void ConditionPatch(AccPatch patch)

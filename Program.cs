@@ -44,6 +44,10 @@ namespace SubdivisionRenderer
 			renderForm.KeyDown += HandleKeyboardStart;
 			renderForm.KeyUp += HandleKeyboardEnd;
 			renderForm.UserResized += FormResized;
+			renderForm.MouseDown += HandleMouseDown;
+			renderForm.MouseUp += HandleMouseUp;
+			renderForm.MouseMove += HandleMouseMove;
+			renderForm.MouseWheel += HandleMouseWheel;
 
 			FindModels();
 
@@ -167,6 +171,26 @@ namespace SubdivisionRenderer
 		private static void HandleKeyboardEnd(Object sender, KeyEventArgs e)
 		{
 			Camera.HandleKeyboardEnd(e);
+		}
+
+		private static void HandleMouseDown(object sender, MouseEventArgs e)
+		{
+			Camera.HandleMouseDown(e);
+		}
+
+		private static void HandleMouseUp(object sender, MouseEventArgs e)
+		{
+			Camera.HandleMouseUp(e);
+		}
+
+		private static void HandleMouseMove(object sender, MouseEventArgs e)
+		{
+			Camera.HandleMouseMove(e);
+		}
+
+		private static void HandleMouseWheel(object sender, MouseEventArgs e)
+		{
+			Camera.HandleMouseWheel(e);
 		}
 
 		private static void OnExit(Object sender, FormClosingEventArgs e)

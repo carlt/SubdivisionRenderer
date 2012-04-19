@@ -14,7 +14,7 @@ namespace SubdivisionRenderer
 
 		public static bool operator ==(AccPatch a, AccPatch b)
 		{
-			return a.Points.Select(p => p.PositionIndex).SequenceEqual(b.Points.Select(p => p.PositionIndex));
+			return a.Points.Take(4).Select(p => p.PositionIndex).SequenceEqual(b.Points.Take(4).Select(p => p.PositionIndex));
 		}
 
 		public static bool operator !=(AccPatch a, AccPatch b)

@@ -155,7 +155,7 @@ namespace SubdivisionRenderer
 			switch (_currentShader)
 			{
 				case ShaderMode.Flat:
-					return "Basic";
+					return "Bilinear";
 				case ShaderMode.Phong:
 					return "Phong";
 				case ShaderMode.PnQuads:

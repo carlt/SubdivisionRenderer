@@ -31,6 +31,11 @@ namespace SubdivisionRenderer
 		private static bool _speed;
 		private static readonly bool[] Moving = new bool[10];
 
+		// Mouse
+		private static int _mouseX;
+		private static int _mouseY;
+		private static bool _mousePressed;
+
 		public static Matrix World()
 		{
 			var secPerFrame = 1f / Program.GetFrameRate();
@@ -61,32 +66,32 @@ namespace SubdivisionRenderer
 			var strafe = Vector3.Normalize(Vector3.Cross(direction, Up));
 			var secPerFrame = 1f / Program.GetFrameRate();
 
-			if (Moving[(int)Mode.MoveForward])
+			if (Moving[(int) Mode.MoveForward])
 			{
 				Target += direction * MoveStep * secPerFrame;
 				Eye += direction * MoveStep * secPerFrame;
 			}
-			if (Moving[(int)Mode.MoveBackward])
+			if (Moving[(int) Mode.MoveBackward])
 			{
 				Target -= direction * MoveStep * secPerFrame;
 				Eye -= direction * MoveStep * secPerFrame;
 			}
-			if (Moving[(int)Mode.MoveLeft])
+			if (Moving[(int) Mode.MoveLeft])
 			{
 				Target += strafe * MoveStep * secPerFrame;
 				Eye += strafe * MoveStep * secPerFrame;
 			}
-			if (Moving[(int)Mode.MoveRight])
+			if (Moving[(int) Mode.MoveRight])
 			{
 				Target -= strafe * MoveStep * secPerFrame;
 				Eye -= strafe * MoveStep * secPerFrame;
 			}
-			if (Moving[(int)Mode.MoveUp])
+			if (Moving[(int) Mode.MoveUp])
 			{
 				Target += Up * MoveStep * secPerFrame;
 				Eye += Up * MoveStep * secPerFrame;
 			}
-			if (Moving[(int)Mode.MoveDown])
+			if (Moving[(int) Mode.MoveDown])
 			{
 				Target -= Up * MoveStep * secPerFrame;
 				Eye -= Up * MoveStep * secPerFrame;
@@ -100,124 +105,150 @@ namespace SubdivisionRenderer
 			return World() * View() * Matrix.PerspectiveFovLH(Fov, Aspect, 0.1f, 100f);
 		}
 
-		public static void Rotate(Vector3 rotation)
+		private static void Rotate(Vector3 rotation)
 		{
 			if (Rotation.X + rotation.X > Math.PI * 2)
-				Rotation.X += rotation.X - (float)Math.PI * 2;
+				Rotation.X += rotation.X - (float) Math.PI * 2;
 			else if (Rotation.X + rotation.X < -Math.PI * 2)
-				Rotation.X += rotation.X + (float)Math.PI * 2;
+				Rotation.X += rotation.X + (float) Math.PI * 2;
 			else
 				Rotation.X += rotation.X;
 
 			if (Rotation.Y + rotation.Y > Math.PI * 2)
-				Rotation.Y += rotation.Y - (float)Math.PI * 2;
+				Rotation.Y += rotation.Y - (float) Math.PI * 2;
 			else if (Rotation.Y + rotation.Y < -Math.PI * 2)
-				Rotation.Y += rotation.Y + (float)Math.PI * 2;
+				Rotation.Y += rotation.Y + (float) Math.PI * 2;
 			else
 				Rotation.Y += rotation.Y;
 
 			if (Rotation.Z + rotation.Z > Math.PI * 2)
-				Rotation.Z += rotation.Z - (float)Math.PI * 2;
+				Rotation.Z += rotation.Z - (float) Math.PI * 2;
 			else if (Rotation.Z + rotation.Z < -Math.PI * 2)
-				Rotation.Z += rotation.Z + (float)Math.PI * 2;
+				Rotation.Z += rotation.Z + (float) Math.PI * 2;
 			else
 				Rotation.Z += rotation.Z;
 		}
 
 		public static void HandleKeyboardStart(KeyEventArgs e)
 		{
-			if (e.KeyCode == Keys.ShiftKey)
+			switch (e.KeyCode)
 			{
-				_speed = true;
-			}
-			else if (e.KeyCode == Controls.MoveForward)
-			{
-				Moving[(int) Mode.MoveForward] = true;
-			} 
-			else if (e.KeyCode == Controls.MoveBackward)
-			{
-				Moving[(int) Mode.MoveBackward] = true;
-			}
-			else if (e.KeyCode == Controls.MoveLeft)
-			{
-				Moving[(int) Mode.MoveLeft] = true;
-			}
-			else if (e.KeyCode == Controls.MoveRight)
-			{
-				Moving[(int) Mode.MoveRight] = true;
-			}
-			else if (e.KeyCode == Controls.MoveUp)
-			{
-				Moving[(int) Mode.MoveUp] = true;
-			}
-			else if (e.KeyCode == Controls.MoveDown)
-			{
-				Moving[(int) Mode.MoveDown] = true;
-			}
-			else if (e.KeyCode == Controls.RotatePosY)
-			{
-				Moving[(int) Mode.RotatePosY] = true;
-			}
-			else if (e.KeyCode == Controls.RotateNegY)
-			{
-				Moving[(int) Mode.RotateNegY] = true;
-			}
-			else if (e.KeyCode == Controls.RotatePosX)
-			{
-				Moving[(int) Mode.RotatePosX] = true;
-			}
-			else if (e.KeyCode == Controls.RotateNegX)
-			{
-				Moving[(int) Mode.RotateNegX] = true;
+				case Keys.ShiftKey:
+					_speed = true;
+					break;
+				case Controls.MoveForward:
+					Moving[(int) Mode.MoveForward] = true;
+					break;
+				case Controls.MoveBackward:
+					Moving[(int) Mode.MoveBackward] = true;
+					break;
+				case Controls.MoveLeft:
+					Moving[(int) Mode.MoveLeft] = true;
+					break;
+				case Controls.MoveRight:
+					Moving[(int) Mode.MoveRight] = true;
+					break;
+				case Controls.MoveUp:
+					Moving[(int) Mode.MoveUp] = true;
+					break;
+				case Controls.MoveDown:
+					Moving[(int) Mode.MoveDown] = true;
+					break;
+				case Controls.RotatePosY:
+					Moving[(int) Mode.RotatePosY] = true;
+					break;
+				case Controls.RotateNegY:
+					Moving[(int) Mode.RotateNegY] = true;
+					break;
+				case Controls.RotatePosX:
+					Moving[(int) Mode.RotatePosX] = true;
+					break;
+				case Controls.RotateNegX:
+					Moving[(int) Mode.RotateNegX] = true;
+					break;
 			}
 		}
 
 		public static void HandleKeyboardEnd(KeyEventArgs e)
 		{
-			if (e.KeyCode == Keys.ShiftKey)
+			switch (e.KeyCode)
 			{
-				_speed = false;
+				case Keys.ShiftKey:
+					_speed = false;
+					break;
+				case Controls.MoveForward:
+					Moving[(int) Mode.MoveForward] = false;
+					break;
+				case Controls.MoveBackward:
+					Moving[(int) Mode.MoveBackward] = false;
+					break;
+				case Controls.MoveLeft:
+					Moving[(int) Mode.MoveLeft] = false;
+					break;
+				case Controls.MoveRight:
+					Moving[(int) Mode.MoveRight] = false;
+					break;
+				case Controls.MoveUp:
+					Moving[(int) Mode.MoveUp] = false;
+					break;
+				case Controls.MoveDown:
+					Moving[(int) Mode.MoveDown] = false;
+					break;
+				case Controls.RotatePosY:
+					Moving[(int) Mode.RotatePosY] = false;
+					break;
+				case Controls.RotateNegY:
+					Moving[(int) Mode.RotateNegY] = false;
+					break;
+				case Controls.RotatePosX:
+					Moving[(int) Mode.RotatePosX] = false;
+					break;
+				case Controls.RotateNegX:
+					Moving[(int) Mode.RotateNegX] = false;
+					break;
 			}
-			else if (e.KeyCode == Controls.MoveForward)
+		}
+
+		public static void HandleMouseDown(MouseEventArgs e)
+		{
+			_mouseX = e.X;
+			_mouseY = e.Y;
+			_mousePressed = true;
+		}
+
+		public static void HandleMouseUp(MouseEventArgs e)
+		{
+			_mousePressed = false;
+		}
+
+		public static void HandleMouseMove(MouseEventArgs e)
+		{
+			if (!_mousePressed) return;
+			
+			var deltaX = e.X - _mouseX;
+			var deltaY = e.Y - _mouseY;
+			
+			Rotate(new Vector3(deltaX / -360f, deltaY / -360f, 0f));
+
+			_mouseX = e.X;
+			_mouseY = e.Y;
+		}
+
+		public static void HandleMouseWheel(MouseEventArgs e)
+		{
+			var direction = Vector3.Normalize(Target - Eye);
+
+			if (e.Delta > 0)
 			{
-				Moving[(int) Mode.MoveForward] = false;
+				Target += direction * MoveStep * 0.25f;
+				Eye += direction * MoveStep * 0.25f;
 			}
-			else if (e.KeyCode == Controls.MoveBackward)
+			else
 			{
-				Moving[(int) Mode.MoveBackward] = false;
+				Target -= direction * MoveStep * 0.25f;
+				Eye -= direction * MoveStep * 0.25f;
 			}
-			else if (e.KeyCode == Controls.MoveLeft)
-			{
-				Moving[(int) Mode.MoveLeft] = false;
-			}
-			else if (e.KeyCode == Controls.MoveRight)
-			{
-				Moving[(int) Mode.MoveRight] = false;
-			}
-			else if (e.KeyCode == Controls.MoveUp)
-			{
-				Moving[(int) Mode.MoveUp] = false;
-			}
-			else if (e.KeyCode == Controls.MoveDown)
-			{
-				Moving[(int) Mode.MoveDown] = false;
-			}
-			else if (e.KeyCode == Controls.RotatePosY)
-			{
-				Moving[(int) Mode.RotatePosY] = false;
-			}
-			else if (e.KeyCode == Controls.RotateNegY)
-			{
-				Moving[(int) Mode.RotateNegY] = false;
-			}
-			else if (e.KeyCode == Controls.RotatePosX)
-			{
-				Moving[(int) Mode.RotatePosX] = false;
-			}
-			else if (e.KeyCode == Controls.RotateNegX)
-			{
-				Moving[(int) Mode.RotateNegX] = false;
-			}
+
 		}
 
 		private enum Mode
