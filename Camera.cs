@@ -57,7 +57,7 @@ namespace SubdivisionRenderer
 				Rotate(new Vector3(-RotateStep * secPerFrame, 0f, 0f));
 			}
 			
-			return Matrix.RotationYawPitchRoll(Rotation.X, Rotation.Y, Rotation.Z) * Matrix.Translation(Position);
+			return Matrix.Translation(Position) * Matrix.RotationYawPitchRoll(Rotation.X, Rotation.Y, Rotation.Z);
 		}
 
 		private static Matrix View()
@@ -103,6 +103,16 @@ namespace SubdivisionRenderer
 		public static Matrix WorldViewProjection()
 		{
 			return World() * View() * Matrix.PerspectiveFovLH(Fov, Aspect, 0.1f, 100f);
+		}
+
+		public static void Reset()
+		{
+			Position = new Vector3();
+			Rotation = new Vector3();
+
+			Eye = new Vector3(0f, 0f, -1.5f);
+			Target = Vector3.Zero;
+			Up = new Vector3(0f, 1f, 0f);
 		}
 
 		private static void Rotate(Vector3 rotation)
@@ -224,14 +234,31 @@ namespace SubdivisionRenderer
 		public static void HandleMouseMove(MouseEventArgs e)
 		{
 			if (!_mousePressed) return;
-			
-			var deltaX = e.X - _mouseX;
-			var deltaY = e.Y - _mouseY;
-			
-			Rotate(new Vector3(deltaX / -360f, deltaY / -360f, 0f));
 
-			_mouseX = e.X;
-			_mouseY = e.Y;
+			int deltaX;
+			int deltaY;
+			switch (e.Button)
+			{
+				case MouseButtons.Left:
+					deltaX = e.X - _mouseX;
+					deltaY = e.Y - _mouseY;
+			
+					Rotate(new Vector3(deltaX / -360f, deltaY / -360f, 0f));
+
+					_mouseX = e.X;
+					_mouseY = e.Y;
+					break;
+
+				case MouseButtons.Right:
+					deltaX = e.X - _mouseX;
+					deltaY = e.Y - _mouseY;
+			
+					Position += new Vector3(deltaX / 360f, deltaY / -360f, 0f);
+
+					_mouseX = e.X;
+					_mouseY = e.Y;
+					break;
+			}
 		}
 
 		public static void HandleMouseWheel(MouseEventArgs e)

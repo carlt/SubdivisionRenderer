@@ -101,16 +101,6 @@ float4 BernsteinBasisBiCubic(float t)
                    t * t * t );
 }
 
-float4 dBernsteinBasisBiCubic(float t)
-{
-    float invT = 1.0f - t;
-
-    return float4( -3 * invT * invT,
-                   3 * invT * invT - 6 * t * invT,
-                   6 * t * invT - 3 * t * t,
-                   3 * t * t );
-}
-
 float3 EvaluateBezierBiQuad( float3  p0, float3  p1, float3  p2, 
 							 float3  p3, float3  p4, float3  p5,
 							 float3  p6, float3  p7, float3  p8,
@@ -156,7 +146,6 @@ float4 PhongLighting(float3 normal, float3 position)
 //--------------------------------------------------------------------------------------
 void LoadValenceAndPrefixData( in uint PatchID, out uint Val[4], out uint Prefixes[4] )
 {
-    //PatchID += g_iPatchStartIndex;
     uint4 ValPack = ValencePrefixBuffer.Load( PatchID * 2 );
     uint4 PrefPack = ValencePrefixBuffer.Load( PatchID * 2 + 1 );
     
@@ -831,7 +820,7 @@ DS_OUTPUT DS_ACC( HS_CONSTANT_ACC_OUTPUT input,
 											 bezpatch[4].normal,  bezpatch[5].normal,  bezpatch[6].normal,  bezpatch[7].normal,
 											 bezpatch[8].normal,  bezpatch[9].normal,  bezpatch[10].normal, bezpatch[11].normal,
 											 bezpatch[12].normal, bezpatch[13].normal, bezpatch[14].normal, bezpatch[15].normal,
-											 BasisU,				BasisV);
+											 BasisU,			  BasisV);
 
     DS_OUTPUT Output;
     Output.normal = Normal;
