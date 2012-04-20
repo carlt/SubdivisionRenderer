@@ -67,7 +67,7 @@ struct HS_OUTPUT
 
 struct BEZIER_CONTROL_POINT
 {
-    float3 position : BEZIERPOS;
+	float3 position : BEZIERPOS;
 	float3 normal	: NORMAL;
 };
 
@@ -84,21 +84,21 @@ struct DS_OUTPUT
 //----------------------------------------------------------------------------------------
 float3 BernsteinBasisBiQuad(float t)
 {
-    float invT = 1.0f - t;
+	float invT = 1.0f - t;
 
-    return float3( invT * invT,
-                   2.0f * t * invT,
-                   t * t);
+	return float3( invT * invT,
+				   2.0f * t * invT,
+				   t * t);
 }
 
 float4 BernsteinBasisBiCubic(float t)
 {
-    float invT = 1.0f - t;
+	float invT = 1.0f - t;
 
-    return float4( invT * invT * invT,
-                   3.0f * t * invT * invT,
-                   3.0f * t * t * invT,
-                   t * t * t );
+	return float4( invT * invT * invT,
+				   3.0f * t * invT * invT,
+				   3.0f * t * t * invT,
+				   t * t * t );
 }
 
 float3 EvaluateBezierBiQuad( float3  p0, float3  p1, float3  p2, 
@@ -106,11 +106,11 @@ float3 EvaluateBezierBiQuad( float3  p0, float3  p1, float3  p2,
 							 float3  p6, float3  p7, float3  p8,
 							 float3 BasisU, float3 BasisV )	
 {
-    float3 Value;
-    Value  = BasisV.x * (  p0 * BasisU.x +  p1 * BasisU.y +  p2 * BasisU.z );
-    Value += BasisV.y * (  p3 * BasisU.x +  p4 * BasisU.y +  p5 * BasisU.z );
-    Value += BasisV.z * (  p6 * BasisU.x +  p7 * BasisU.y +  p8 * BasisU.z );
-    return Value;
+	float3 Value;
+	Value  = BasisV.x * (  p0 * BasisU.x +  p1 * BasisU.y +  p2 * BasisU.z );
+	Value += BasisV.y * (  p3 * BasisU.x +  p4 * BasisU.y +  p5 * BasisU.z );
+	Value += BasisV.z * (  p6 * BasisU.x +  p7 * BasisU.y +  p8 * BasisU.z );
+	return Value;
 }
 
 float4 EvaluateBezierBiCubic(float3  p0, float3  p1, float3  p2, float3  p3,
@@ -119,12 +119,12 @@ float4 EvaluateBezierBiCubic(float3  p0, float3  p1, float3  p2, float3  p3,
 							 float3 p12, float3 p13, float3 p14, float3 p15,
 							 float4 BasisU, float4 BasisV )	
 {
-    float3 Value;
-    Value  = BasisV.x * (  p0 * BasisU.x +  p1 * BasisU.y +  p2 * BasisU.z +  p3 * BasisU.w );
-    Value += BasisV.y * (  p4 * BasisU.x +  p5 * BasisU.y +  p6 * BasisU.z +  p7 * BasisU.w );
-    Value += BasisV.z * (  p8 * BasisU.x +  p9 * BasisU.y + p10 * BasisU.z + p11 * BasisU.w );
-    Value += BasisV.w * ( p12 * BasisU.x + p13 * BasisU.y + p14 * BasisU.z + p15 * BasisU.w );
-    return float4(Value, 1);
+	float3 Value;
+	Value  = BasisV.x * (  p0 * BasisU.x +  p1 * BasisU.y +  p2 * BasisU.z +  p3 * BasisU.w );
+	Value += BasisV.y * (  p4 * BasisU.x +  p5 * BasisU.y +  p6 * BasisU.z +  p7 * BasisU.w );
+	Value += BasisV.z * (  p8 * BasisU.x +  p9 * BasisU.y + p10 * BasisU.z + p11 * BasisU.w );
+	Value += BasisV.w * ( p12 * BasisU.x + p13 * BasisU.y + p14 * BasisU.z + p15 * BasisU.w );
+	return float4(Value, 1);
 }
 
 float4 PhongLighting(float3 normal, float3 position)
@@ -146,18 +146,18 @@ float4 PhongLighting(float3 normal, float3 position)
 //--------------------------------------------------------------------------------------
 void LoadValenceAndPrefixData( in uint PatchID, out uint Val[4], out uint Prefixes[4] )
 {
-    uint4 ValPack = ValencePrefixBuffer.Load( PatchID * 2 );
-    uint4 PrefPack = ValencePrefixBuffer.Load( PatchID * 2 + 1 );
-    
-    Val[0] = ValPack.x;
-    Val[1] = ValPack.y;
-    Val[2] = ValPack.z;
-    Val[3] = ValPack.w;
-    
-    Prefixes[0] = PrefPack.x;
-    Prefixes[1] = PrefPack.y;
-    Prefixes[2] = PrefPack.z;
-    Prefixes[3] = PrefPack.w;
+	uint4 ValPack = ValencePrefixBuffer.Load( PatchID * 2 );
+	uint4 PrefPack = ValencePrefixBuffer.Load( PatchID * 2 + 1 );
+	
+	Val[0] = ValPack.x;
+	Val[1] = ValPack.y;
+	Val[2] = ValPack.z;
+	Val[3] = ValPack.w;
+	
+	Prefixes[0] = PrefPack.x;
+	Prefixes[1] = PrefPack.y;
+	Prefixes[2] = PrefPack.z;
+	Prefixes[3] = PrefPack.w;
 }
 
 //----------------------------------------------------------------------------------------
@@ -204,22 +204,22 @@ HS_OUTPUT HS_FLAT(InputPatch<VS_OUTPUT, 4> ip, uint cpid : SV_OutputControlPoint
 {
 	HS_OUTPUT output;
 
-    output.position = ip[cpid].position;
+	output.position = ip[cpid].position;
 	output.normal	= ip[cpid].normal;
 	output.texcoord = ip[cpid].texcoord;
 
-    return output;
+	return output;
 }
 
 [domain("quad")]
 DS_OUTPUT DS_FLAT(HS_CONSTANT_OUTPUT input, float2 UV : SV_DomainLocation, const OutputPatch<HS_OUTPUT, 4> patch)
 {
-    DS_OUTPUT output;
-    
+	DS_OUTPUT output;
+	
 	// Generate Vertex via bilinear interpolation; same with normals and texcoords
-    float3 topMidPos	= lerp(patch[0].position.xyz, patch[1].position.xyz, UV.x);
-    float3 botMidPos	= lerp(patch[3].position.xyz, patch[2].position.xyz, UV.x);
-    
+	float3 topMidPos	= lerp(patch[0].position.xyz, patch[1].position.xyz, UV.x);
+	float3 botMidPos	= lerp(patch[3].position.xyz, patch[2].position.xyz, UV.x);
+	
 	float3 topMidNorm	= lerp(patch[0].normal, patch[1].normal, UV.x);
 	float3 botMidNorm	= lerp(patch[3].normal, patch[2].normal, UV.x);
 	
@@ -235,7 +235,7 @@ DS_OUTPUT DS_FLAT(HS_CONSTANT_OUTPUT input, float2 UV : SV_DomainLocation, const
 
 	output.normal		= normalize(mul(output.normal, (float3x3) World));
 
-    return output;    
+	return output;    
 }
 
 //----------------------------------------------------------------------------------------
@@ -249,12 +249,12 @@ float3 PhongOperator(float3 p, float3 c, float3 n)
 [domain("quad")]
 DS_OUTPUT DS_PHONG(HS_CONSTANT_OUTPUT input, float2 UV : SV_DomainLocation, const OutputPatch<HS_OUTPUT, 4> patch)
 {
-    DS_OUTPUT output;
-    
+	DS_OUTPUT output;
+	
 	// Bilinear interpolation of position
-    float3 topMidPos	= lerp(patch[0].position.xyz, patch[1].position.xyz, UV.x);
-    float3 botMidPos	= lerp(patch[3].position.xyz, patch[2].position.xyz, UV.x);
-    	
+	float3 topMidPos	= lerp(patch[0].position.xyz, patch[1].position.xyz, UV.x);
+	float3 botMidPos	= lerp(patch[3].position.xyz, patch[2].position.xyz, UV.x);
+		
 	float3 newVertex	= lerp(topMidPos, botMidPos, UV.y);
 
 	// Phong operator and bilinear interpolation of results for new position
@@ -273,7 +273,7 @@ DS_OUTPUT DS_PHONG(HS_CONSTANT_OUTPUT input, float2 UV : SV_DomainLocation, cons
 
 	// Bilinear interpolation of normals
 	float3 topMidNorm	= lerp(patch[0].normal, patch[1].normal, UV.x);
-    float3 botMidNorm	= lerp(patch[3].normal, patch[2].normal, UV.x);
+	float3 botMidNorm	= lerp(patch[3].normal, patch[2].normal, UV.x);
 
 	output.normal		= lerp(topMidNorm, botMidNorm, UV.y);
 	output.normal		= normalize(mul(output.normal, (float3x3) World));
@@ -284,7 +284,7 @@ DS_OUTPUT DS_PHONG(HS_CONSTANT_OUTPUT input, float2 UV : SV_DomainLocation, cons
 	
 	output.texcoord		= lerp(topMidTex, botMidTex, UV.y);
 
-    return output;    
+	return output;    
 }
 
 //----------------------------------------------------------------------------------------
@@ -299,11 +299,11 @@ HS_OUTPUT HS_PNQUAD(InputPatch<VS_OUTPUT, 4> ip, uint cpid : SV_OutputControlPoi
 {
 	HS_OUTPUT output;
 
-    output.position = ip[cpid].position;
+	output.position = ip[cpid].position;
 	output.normal	= ip[cpid].normal;
 	output.texcoord = ip[cpid].texcoord;
 
-    return output;
+	return output;
 }
 
 float3 Bij(float3 pi, float3 pj, float3 ni)
@@ -320,10 +320,10 @@ float3 Nij(float3 pi, float3 pj, float3 ni, float3 nj)
 
 struct HSCONSTANT_PNQUAD_OUTPUT
 {
-    float Edges[4]			: SV_TessFactor;
-    float Inside[2]			: SV_InsideTessFactor;
-    float3 EdgePos[8]		: EDGEPOS;				// Order: b01, b10, b12, b21, b23, b32, b30, b03
-    float3 InteriorPos[4]	: INTERIORPOS;			// Order: b02, b13, b20, b31
+	float Edges[4]			: SV_TessFactor;
+	float Inside[2]			: SV_InsideTessFactor;
+	float3 EdgePos[8]		: EDGEPOS;				// Order: b01, b10, b12, b21, b23, b32, b30, b03
+	float3 InteriorPos[4]	: INTERIORPOS;			// Order: b02, b13, b20, b31
 	float3 EdgeNormals[4]	: EDGENORMALS;			// Order: n01 = n10, n12 = n21, n23 = n32, n30 = n03
 	float3 CenterNormal		: CENTERNORMAL;			// n0123
 };
@@ -352,35 +352,40 @@ HSCONSTANT_PNQUAD_OUTPUT HSCONSTANT_PNQUAD(InputPatch<VS_OUTPUT, 4> inputPatch, 
 	output.EdgePos[6] = Bij(inputPatch[3].position.xyz, inputPatch[0].position.xyz, inputPatch[3].normal);
 	output.EdgePos[7] = Bij(inputPatch[0].position.xyz, inputPatch[3].position.xyz, inputPatch[0].normal);
 
-    float3 q = output.EdgePos[0];
-    for (int i = 1; i < 8; ++i)
-    {
-        q += output.EdgePos[i];
-    }
+	float3 q = output.EdgePos[0];
+	for (int i = 1; i < 8; ++i)
+	{
+		q += output.EdgePos[i];
+	}
 
-    float3 center = inputPatch[0].position.xyz + inputPatch[1].position.xyz + inputPatch[2].position.xyz + inputPatch[3].position.xyz;
+	float3 center = inputPatch[0].position.xyz + inputPatch[1].position.xyz + inputPatch[2].position.xyz + inputPatch[3].position.xyz;
 
 	// 4 Inside Positions
 	[unroll]
-    for (i = 0; i < 4; ++i)
-    {
-        float3 Ei = (2 * (output.EdgePos[i * 2] + output.EdgePos[((i + 3) & 3) * 2 + 1] + q) - (output.EdgePos[((i + 1) & 3) * 2 + 1] + output.EdgePos[((i + 2) & 3) * 2])) / 18;
-        float3 Vi = (center + 2 * (inputPatch[(i + 3) & 3].position.xyz + inputPatch[(i + 1) & 3].position.xyz) + inputPatch[(i + 2) & 3].position.xyz) / 9;
-        
+	for (i = 0; i < 4; ++i)
+	{
+		float3 Ei = (2 * (output.EdgePos[i * 2] + output.EdgePos[((i + 3) & 3) * 2 + 1] + q) - (output.EdgePos[((i + 1) & 3) * 2 + 1] + output.EdgePos[((i + 2) & 3) * 2])) / 18;
+		float3 Vi = (center + 2 * (inputPatch[(i + 3) & 3].position.xyz + inputPatch[(i + 1) & 3].position.xyz) + inputPatch[(i + 2) & 3].position.xyz) / 9;
+		
 		output.InteriorPos[i] = 1.5 * Ei - 0.5 * Vi;
-    }
+	}
 
 	output.EdgeNormals[0] = Nij(inputPatch[0].position.xyz, inputPatch[1].position.xyz, inputPatch[0].normal, inputPatch[1].normal);
 	output.EdgeNormals[1] = Nij(inputPatch[1].position.xyz, inputPatch[2].position.xyz, inputPatch[1].normal, inputPatch[2].normal);
 	output.EdgeNormals[2] = Nij(inputPatch[2].position.xyz, inputPatch[3].position.xyz, inputPatch[2].normal, inputPatch[3].normal);
 	output.EdgeNormals[3] = Nij(inputPatch[3].position.xyz, inputPatch[0].position.xyz, inputPatch[3].normal, inputPatch[0].normal);
 
+	//output.EdgeNormals[0] = Nij(inputPatch[0].position.xyz, inputPatch[1].position.xyz, inputPatch[0].normal, inputPatch[1].normal);
+	//output.EdgeNormals[1] = Nij(inputPatch[1].position.xyz, inputPatch[2].position.xyz, inputPatch[1].normal, inputPatch[2].normal);
+	//output.EdgeNormals[2] = Nij(inputPatch[2].position.xyz, inputPatch[3].position.xyz, inputPatch[2].normal, inputPatch[3].normal);
+	//output.EdgeNormals[3] = Nij(inputPatch[3].position.xyz, inputPatch[0].position.xyz, inputPatch[3].normal, inputPatch[0].normal);
+
 	output.CenterNormal = 2.0 * (output.EdgeNormals[0] + output.EdgeNormals[1] + output.EdgeNormals[2] + output.EdgeNormals[3]); 
 	output.CenterNormal += inputPatch[0].normal + inputPatch[1].normal + inputPatch[2].normal + inputPatch[3].normal;
 	output.CenterNormal /= 12;
 	output.CenterNormal = normalize(output.CenterNormal);
 
-    return output;
+	return output;
 }
 
 [domain("quad")]
@@ -390,7 +395,7 @@ DS_OUTPUT DS_PNQUAD(HSCONSTANT_PNQUAD_OUTPUT input, float2 uv : SV_DomainLocatio
 
 	// Evaluate BiCubic Bezier for position
 	float4 basisUCubic = BernsteinBasisBiCubic(uv.x);
-    float4 basisVCubic = BernsteinBasisBiCubic(uv.y);
+	float4 basisVCubic = BernsteinBasisBiCubic(uv.y);
 
 	output.position = EvaluateBezierBiCubic( inputPatch[0].position.xyz,	input.EdgePos[0],		input.EdgePos[1],		inputPatch[1].position.xyz,
 											 input.EdgePos[7],				input.InteriorPos[0],	input.InteriorPos[1],	input.EdgePos[2],
@@ -424,41 +429,41 @@ DS_OUTPUT DS_PNQUAD(HSCONSTANT_PNQUAD_OUTPUT input, float2 uv : SV_DomainLocatio
 // ACC Tesselation Shaders
 //----------------------------------------------------------------------------------------
 float4 ComputeInteriorVertex( uint index, 
-                              uint Val[4], 
-                              const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip )
+							  uint Val[4], 
+							  const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip )
 {
-    switch( index )
-    {
-    case 0:
-        return (ip[0].position*Val[0] + ip[1].position*2 +      ip[2].position +        ip[3].position*2)      / (5+Val[0]);
-    case 1:
-        return (ip[0].position*2 +      ip[1].position*Val[1] + ip[2].position*2 +      ip[3].position)        / (5+Val[1]);
-    case 2:
-        return (ip[0].position +        ip[1].position*2 +      ip[2].position*Val[2] + ip[3].position*2)      / (5+Val[2]);
-    case 3:
-        return (ip[0].position*2 +      ip[1].position +        ip[2].position*2 +      ip[3].position*Val[3]) / (5+Val[3]);
-    }
-    
-    return float4(0,0,0,0);
+	switch( index )
+	{
+	case 0:
+		return (ip[0].position*Val[0] + ip[1].position*2 +      ip[2].position +        ip[3].position*2)      / (5+Val[0]);
+	case 1:
+		return (ip[0].position*2 +      ip[1].position*Val[1] + ip[2].position*2 +      ip[3].position)        / (5+Val[1]);
+	case 2:
+		return (ip[0].position +        ip[1].position*2 +      ip[2].position*Val[2] + ip[3].position*2)      / (5+Val[2]);
+	case 3:
+		return (ip[0].position*2 +      ip[1].position +        ip[2].position*2 +      ip[3].position*Val[3]) / (5+Val[3]);
+	}
+	
+	return float4(0,0,0,0);
 }
 
 float3 ComputeInteriorNormal( uint index, 
-                              uint Val[4], 
-                              const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip )
+							  uint Val[4], 
+							  const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip )
 {
-    switch( index )
-    {
-    case 0:
-        return (ip[0].normal*Val[0] + ip[1].normal*2 +      ip[2].normal +        ip[3].normal*2)      / (5+Val[0]);
-    case 1:
-        return (ip[0].normal*2 +      ip[1].normal*Val[1] + ip[2].normal*2 +      ip[3].normal)        / (5+Val[1]);
-    case 2:
-        return (ip[0].normal +        ip[1].normal*2 +      ip[2].normal*Val[2] + ip[3].normal*2)      / (5+Val[2]);
-    case 3:
-        return (ip[0].normal*2 +      ip[1].normal +        ip[2].normal*2 +      ip[3].normal*Val[3]) / (5+Val[3]);
-    }
-    
-    return float3(0,0,0);
+	switch( index )
+	{
+	case 0:
+		return (ip[0].normal*Val[0] + ip[1].normal*2 +      ip[2].normal +        ip[3].normal*2)      / (5+Val[0]);
+	case 1:
+		return (ip[0].normal*2 +      ip[1].normal*Val[1] + ip[2].normal*2 +      ip[3].normal)        / (5+Val[1]);
+	case 2:
+		return (ip[0].normal +        ip[1].normal*2 +      ip[2].normal*Val[2] + ip[3].normal*2)      / (5+Val[2]);
+	case 3:
+		return (ip[0].normal*2 +      ip[1].normal +        ip[2].normal*2 +      ip[3].normal*Val[3]) / (5+Val[3]);
+	}
+	
+	return float3(0,0,0);
 }
 
 //--------------------------------------------------------------------------------------
@@ -475,72 +480,72 @@ float3 ComputeInteriorNormal( uint index,
 // corner to the prefix value of the current corner.
 //--------------------------------------------------------------------------------------
 void ComputeCorner( uint index, 
-                    out float3 CornerB, // Corner for the Bezier patch
-                    out float3 CornerN, // Corner for the normal patch
-                    const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
-                    const in uint Val[4], 
-                    const in uint Pref[4] )
+					out float3 CornerB, // Corner for the Bezier patch
+					out float3 CornerN, // Corner for the normal patch
+					const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
+					const in uint Val[4], 
+					const in uint Pref[4] )
 {
-    const float fOWt = 1;
-    const float fEWt = 4;
+	const float fOWt = 1;
+	const float fEWt = 4;
 
-    // Figure out where to start the walk by using the previous corner's prefix value
-    uint PrefIm1 = 0;
-    uint uStart = 4;
-    if( index )
-    {
-        PrefIm1 = Pref[index-1];
-        uStart = PrefIm1;
-    }
+	// Figure out where to start the walk by using the previous corner's prefix value
+	uint PrefIm1 = 0;
+	uint uStart = 4;
+	if( index )
+	{
+		PrefIm1 = Pref[index-1];
+		uStart = PrefIm1;
+	}
 
-    // Calculate the N*N weight for the final value
-    CornerB = (Val[index]*Val[index])*ip[index].position.xyz; // n^2 part
+	// Calculate the N*N weight for the final value
+	CornerB = (Val[index]*Val[index])*ip[index].position.xyz; // n^2 part
 	CornerN = (Val[index]*Val[index])*ip[index].normal;
-        
-    // Start the walk with the uStart prefix (the prefix of the corner before us)
-    CornerB += ip[uStart].position.xyz * fEWt;
+		
+	// Start the walk with the uStart prefix (the prefix of the corner before us)
+	CornerB += ip[uStart].position.xyz * fEWt;
 	CornerN += ip[uStart].normal * fEWt;
-    
-    // Gather all vertices between the previous corner's prefix and our own prefix
-    // We'll do two at a time, since they always come in twos
-    while(uStart < Pref[index]-1) 
-    {
-        ++uStart;
-        CornerB += ip[uStart].position.xyz * fOWt;
+	
+	// Gather all vertices between the previous corner's prefix and our own prefix
+	// We'll do two at a time, since they always come in twos
+	while(uStart < Pref[index]-1) 
+	{
+		++uStart;
+		CornerB += ip[uStart].position.xyz * fOWt;
 		CornerN += ip[uStart].normal * fOWt;
 
-        ++uStart;
-        CornerB += ip[uStart].position.xyz * fEWt;
+		++uStart;
+		CornerB += ip[uStart].position.xyz * fEWt;
 		CornerN += ip[uStart].normal * fEWt;
-    }
-    ++uStart;
+	}
+	++uStart;
 
-    // Add in the last guy and make sure to wrap to the beginning if we're the last corner
-    if (index == 3)
-        uStart = 4; 
-    CornerB += ip[uStart].position.xyz * fOWt;
+	// Add in the last guy and make sure to wrap to the beginning if we're the last corner
+	if (index == 3)
+		uStart = 4; 
+	CornerB += ip[uStart].position.xyz * fOWt;
 	CornerN += ip[uStart].normal * fOWt;
 
-    // Add in the guy before the prefix as well
-    if (index)
-        uStart = PrefIm1-1;
-    else
-        uStart = Pref[3]-1;
+	// Add in the guy before the prefix as well
+	if (index)
+		uStart = PrefIm1-1;
+	else
+		uStart = Pref[3]-1;
 
-    CornerB += ip[uStart].position.xyz * fOWt;
+	CornerB += ip[uStart].position.xyz * fOWt;
 	CornerN += ip[uStart].normal * fOWt;
 
-    // We're done with the walk now.  Now we need to add the contributions of the original subd quad.
-    CornerB += ip[MOD4(index+1)].position.xyz * fEWt;
-    CornerB += ip[MOD4(index+2)].position.xyz * fOWt;
-    CornerB += ip[MOD4(index+3)].position.xyz * fEWt;
+	// We're done with the walk now.  Now we need to add the contributions of the original subd quad.
+	CornerB += ip[MOD4(index+1)].position.xyz * fEWt;
+	CornerB += ip[MOD4(index+2)].position.xyz * fOWt;
+	CornerB += ip[MOD4(index+3)].position.xyz * fEWt;
 
 	CornerN += ip[MOD4(index+1)].normal * fEWt;
-    CornerN += ip[MOD4(index+2)].normal * fOWt;
-    CornerN += ip[MOD4(index+3)].normal * fEWt;
-    
-    // Normalize the corner weights
-    CornerB *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] ); // normalize
+	CornerN += ip[MOD4(index+2)].normal * fOWt;
+	CornerN += ip[MOD4(index+3)].normal * fEWt;
+	
+	// Normalize the corner weights
+	CornerB *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] ); // normalize
 	CornerN *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] );
 }
 
@@ -551,141 +556,141 @@ void ComputeCorner( uint index,
 // don't need all of the neighbor points attached to this vertex.
 //--------------------------------------------------------------------------------------
 float3 ComputeEdgeVertex( in uint index /* 0-7 */, 
-                          const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
-                          const in uint Val[4], 
-                          const in uint Pref[4] )
+						  const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
+						  const in uint Val[4], 
+						  const in uint Pref[4] )
 {
-    float val1 = 2 * Val[0] + 10;
-    float val2 = 2 * Val[1] + 10;
-    float val13 = 2 * Val[3] + 10;
-    float val14 = 2 * Val[2] + 10;
-    float val4 = val1;
-    float val8 = val13;
-    float val7 = val2;
-    float val11 = val14;
-    
-    float3 vRetVal = float3(0,0,0);
-    switch( index )
-    {
-    // Horizontal
-    case 0:
-        vRetVal = (Val[0]*2*ip[0].position.xyz + 4*ip[1].position.xyz + ip[2].position.xyz + ip[3].position.xyz*2 +
-              2*ip[Pref[0]-1].position.xyz + ip[Pref[0]].position.xyz) / val1;
-        break;
-    case 1:
-        vRetVal = (4*ip[0].position.xyz + Val[1]*2*ip[1].position.xyz + ip[2].position.xyz*2 + ip[3].position.xyz +
-              ip[Pref[0]-1].position.xyz + 2*ip[Pref[0]].position.xyz) / val2;
-        break;
-    case 2:
-        vRetVal = (2*ip[0].position.xyz + ip[1].position.xyz + 4*ip[2].position.xyz + ip[3].position.xyz*2*Val[3] +
-               2*ip[Pref[2]].position.xyz + ip[Pref[2]-1].position.xyz) / val13;
-        break;
-    case 3:
-        vRetVal = (ip[0].position.xyz + 2*ip[1].position.xyz + Val[2]*2*ip[2].position.xyz + ip[3].position.xyz*4 +
-               ip[Pref[2]].position.xyz + 2*ip[Pref[2]-1].position.xyz) / val14;
-        break;
-    // Vertical
-    case 4:
-        vRetVal = (Val[0]*2*ip[0].position.xyz + 2*ip[1].position.xyz + ip[2].position.xyz + ip[3].position.xyz*4 +
-              2*ip[4].position.xyz + ip[Pref[3]-1].position.xyz) / val4;
-        break;
-    case 5:
-        vRetVal = (4*ip[0].position.xyz + ip[1].position.xyz + 2*ip[2].position.xyz + ip[3].position.xyz*2*Val[3] +
-              ip[4].position.xyz + 2*ip[Pref[3]-1].position.xyz) / val8;
-        break;
-    case 6:
-        vRetVal = (2*ip[0].position.xyz + Val[1]*2*ip[1].position.xyz + 4*ip[2].position.xyz + ip[3].position.xyz +
-              2*ip[Pref[1]-1].position.xyz + ip[Pref[1]].position.xyz) / val7;
-        break;
-    case 7:
-        vRetVal = (ip[0].position.xyz + 4*ip[1].position.xyz + Val[2]*2*ip[2].position.xyz + 2*ip[3].position.xyz +
-               ip[Pref[1]-1].position.xyz + 2*ip[Pref[1]].position.xyz) / val11;
-        break;
-    }
-        
-    return vRetVal;
+	float val1 = 2 * Val[0] + 10;
+	float val2 = 2 * Val[1] + 10;
+	float val13 = 2 * Val[3] + 10;
+	float val14 = 2 * Val[2] + 10;
+	float val4 = val1;
+	float val8 = val13;
+	float val7 = val2;
+	float val11 = val14;
+	
+	float3 vRetVal = float3(0,0,0);
+	switch( index )
+	{
+	// Horizontal
+	case 0:
+		vRetVal = (Val[0]*2*ip[0].position.xyz + 4*ip[1].position.xyz + ip[2].position.xyz + ip[3].position.xyz*2 +
+			  2*ip[Pref[0]-1].position.xyz + ip[Pref[0]].position.xyz) / val1;
+		break;
+	case 1:
+		vRetVal = (4*ip[0].position.xyz + Val[1]*2*ip[1].position.xyz + ip[2].position.xyz*2 + ip[3].position.xyz +
+			  ip[Pref[0]-1].position.xyz + 2*ip[Pref[0]].position.xyz) / val2;
+		break;
+	case 2:
+		vRetVal = (2*ip[0].position.xyz + ip[1].position.xyz + 4*ip[2].position.xyz + ip[3].position.xyz*2*Val[3] +
+			   2*ip[Pref[2]].position.xyz + ip[Pref[2]-1].position.xyz) / val13;
+		break;
+	case 3:
+		vRetVal = (ip[0].position.xyz + 2*ip[1].position.xyz + Val[2]*2*ip[2].position.xyz + ip[3].position.xyz*4 +
+			   ip[Pref[2]].position.xyz + 2*ip[Pref[2]-1].position.xyz) / val14;
+		break;
+	// Vertical
+	case 4:
+		vRetVal = (Val[0]*2*ip[0].position.xyz + 2*ip[1].position.xyz + ip[2].position.xyz + ip[3].position.xyz*4 +
+			  2*ip[4].position.xyz + ip[Pref[3]-1].position.xyz) / val4;
+		break;
+	case 5:
+		vRetVal = (4*ip[0].position.xyz + ip[1].position.xyz + 2*ip[2].position.xyz + ip[3].position.xyz*2*Val[3] +
+			  ip[4].position.xyz + 2*ip[Pref[3]-1].position.xyz) / val8;
+		break;
+	case 6:
+		vRetVal = (2*ip[0].position.xyz + Val[1]*2*ip[1].position.xyz + 4*ip[2].position.xyz + ip[3].position.xyz +
+			  2*ip[Pref[1]-1].position.xyz + ip[Pref[1]].position.xyz) / val7;
+		break;
+	case 7:
+		vRetVal = (ip[0].position.xyz + 4*ip[1].position.xyz + Val[2]*2*ip[2].position.xyz + 2*ip[3].position.xyz +
+			   ip[Pref[1]-1].position.xyz + 2*ip[Pref[1]].position.xyz) / val11;
+		break;
+	}
+		
+	return vRetVal;
 }
 
 float3 ComputeEdgeNormal( in uint index /* 0-7 */, 
-                          const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
-                          const in uint Val[4], 
-                          const in uint Pref[4] )
+						  const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
+						  const in uint Val[4], 
+						  const in uint Pref[4] )
 {
-    float val1 = 2 * Val[0] + 10;
-    float val2 = 2 * Val[1] + 10;
-    float val13 = 2 * Val[3] + 10;
-    float val14 = 2 * Val[2] + 10;
-    float val4 = val1;
-    float val8 = val13;
-    float val7 = val2;
-    float val11 = val14;
-    
-    float3 vRetVal = float3(0,0,0);
-    switch( index )
-    {
-    // Horizontal
-    case 0:
-        vRetVal = (Val[0]*2*ip[0].normal + 4*ip[1].normal + ip[2].normal + ip[3].normal*2 +
-              2*ip[Pref[0]-1].normal + ip[Pref[0]].normal) / val1;
-        break;
-    case 1:
-        vRetVal = (4*ip[0].normal + Val[1]*2*ip[1].normal + ip[2].normal*2 + ip[3].normal +
-              ip[Pref[0]-1].normal + 2*ip[Pref[0]].normal) / val2;
-        break;
-    case 2:
-        vRetVal = (2*ip[0].normal + ip[1].normal + 4*ip[2].normal + ip[3].normal*2*Val[3] +
-               2*ip[Pref[2]].normal + ip[Pref[2]-1].normal) / val13;
-        break;
-    case 3:
-        vRetVal = (ip[0].normal + 2*ip[1].normal + Val[2]*2*ip[2].normal + ip[3].normal*4 +
-               ip[Pref[2]].normal + 2*ip[Pref[2]-1].normal) / val14;
-        break;
-    // Vertical
-    case 4:
-        vRetVal = (Val[0]*2*ip[0].normal + 2*ip[1].normal + ip[2].normal + ip[3].normal*4 +
-              2*ip[4].normal + ip[Pref[3]-1].normal) / val4;
-        break;
-    case 5:
-        vRetVal = (4*ip[0].normal + ip[1].normal + 2*ip[2].normal + ip[3].normal*2*Val[3] +
-              ip[4].normal + 2*ip[Pref[3]-1].normal) / val8;
-        break;
-    case 6:
-        vRetVal = (2*ip[0].normal + Val[1]*2*ip[1].normal + 4*ip[2].normal + ip[3].normal +
-              2*ip[Pref[1]-1].normal + ip[Pref[1]].normal) / val7;
-        break;
-    case 7:
-        vRetVal = (ip[0].normal + 4*ip[1].normal + Val[2]*2*ip[2].normal + 2*ip[3].normal +
-               ip[Pref[1]-1].normal + 2*ip[Pref[1]].normal) / val11;
-        break;
-    }
-        
-    return vRetVal;
+	float val1 = 2 * Val[0] + 10;
+	float val2 = 2 * Val[1] + 10;
+	float val13 = 2 * Val[3] + 10;
+	float val14 = 2 * Val[2] + 10;
+	float val4 = val1;
+	float val8 = val13;
+	float val7 = val2;
+	float val11 = val14;
+	
+	float3 vRetVal = float3(0,0,0);
+	switch( index )
+	{
+	// Horizontal
+	case 0:
+		vRetVal = (Val[0]*2*ip[0].normal + 4*ip[1].normal + ip[2].normal + ip[3].normal*2 +
+			  2*ip[Pref[0]-1].normal + ip[Pref[0]].normal) / val1;
+		break;
+	case 1:
+		vRetVal = (4*ip[0].normal + Val[1]*2*ip[1].normal + ip[2].normal*2 + ip[3].normal +
+			  ip[Pref[0]-1].normal + 2*ip[Pref[0]].normal) / val2;
+		break;
+	case 2:
+		vRetVal = (2*ip[0].normal + ip[1].normal + 4*ip[2].normal + ip[3].normal*2*Val[3] +
+			   2*ip[Pref[2]].normal + ip[Pref[2]-1].normal) / val13;
+		break;
+	case 3:
+		vRetVal = (ip[0].normal + 2*ip[1].normal + Val[2]*2*ip[2].normal + ip[3].normal*4 +
+			   ip[Pref[2]].normal + 2*ip[Pref[2]-1].normal) / val14;
+		break;
+	// Vertical
+	case 4:
+		vRetVal = (Val[0]*2*ip[0].normal + 2*ip[1].normal + ip[2].normal + ip[3].normal*4 +
+			  2*ip[4].normal + ip[Pref[3]-1].normal) / val4;
+		break;
+	case 5:
+		vRetVal = (4*ip[0].normal + ip[1].normal + 2*ip[2].normal + ip[3].normal*2*Val[3] +
+			  ip[4].normal + 2*ip[Pref[3]-1].normal) / val8;
+		break;
+	case 6:
+		vRetVal = (2*ip[0].normal + Val[1]*2*ip[1].normal + 4*ip[2].normal + ip[3].normal +
+			  2*ip[Pref[1]-1].normal + ip[Pref[1]].normal) / val7;
+		break;
+	case 7:
+		vRetVal = (ip[0].normal + 4*ip[1].normal + Val[2]*2*ip[2].normal + 2*ip[3].normal +
+			   ip[Pref[1]-1].normal + 2*ip[Pref[1]].normal) / val11;
+		break;
+	}
+		
+	return vRetVal;
 }
 
 struct HS_CONSTANT_ACC_OUTPUT
 {
-    float Edges[4]			: SV_TessFactor;
-    float Inside[2]			: SV_InsideTessFactor;
-    
+	float Edges[4]			: SV_TessFactor;
+	float Inside[2]			: SV_InsideTessFactor;
+	
 	float2 texcoords[4]		: TEXCOORD;
 };
 
 HS_CONSTANT_ACC_OUTPUT HSCONSTANT_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip,
-                                       uint PatchID : SV_PrimitiveID )
+									   uint PatchID : SV_PrimitiveID )
 {	
-    HS_CONSTANT_ACC_OUTPUT Output;
-    
-    float TessAmount = TessFactor;
+	HS_CONSTANT_ACC_OUTPUT Output;
+	
+	float TessAmount = TessFactor;
 
-    Output.Edges[0] = Output.Edges[1] = Output.Edges[2] = Output.Edges[3] = TessAmount;
-    Output.Inside[0] = Output.Inside[1] = TessAmount;
-    
-    Output.texcoords[0] = ip[0].texcoord;
-    Output.texcoords[1] = ip[1].texcoord;
-    Output.texcoords[2] = ip[2].texcoord;
-    Output.texcoords[3] = ip[3].texcoord;
+	Output.Edges[0] = Output.Edges[1] = Output.Edges[2] = Output.Edges[3] = TessAmount;
+	Output.Inside[0] = Output.Inside[1] = TessAmount;
+	
+	Output.texcoords[0] = ip[0].texcoord;
+	Output.texcoords[1] = ip[1].texcoord;
+	Output.texcoords[2] = ip[2].texcoord;
+	Output.texcoords[3] = ip[3].texcoord;
 
-    return Output;
+	return Output;
 }
 
 //--------------------------------------------------------------------------------------
@@ -706,111 +711,111 @@ HS_CONSTANT_ACC_OUTPUT HSCONSTANT_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip,
 [outputcontrolpoints(16)]
 [patchconstantfunc("HSCONSTANT_ACC")]
 BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p, 
-                            uint i : SV_OutputControlPointID,
-                            uint PatchID : SV_PrimitiveID )
+							uint i : SV_OutputControlPointID,
+							uint PatchID : SV_PrimitiveID )
 {
-    // Valences and prefixes are loaded from a buffer
-    uint Val[4];
-    uint Prefixes[4];
-    LoadValenceAndPrefixData( PatchID, Val, Prefixes );
-    
-    float3 CornerB = float3(0,0,0);
-    float3 CornerN = float3(0,0,0);
+	// Valences and prefixes are loaded from a buffer
+	uint Val[4];
+	uint Prefixes[4];
+	LoadValenceAndPrefixData( PatchID, Val, Prefixes );
+	
+	float3 CornerB = float3(0,0,0);
+	float3 CornerN = float3(0,0,0);
 
-    BEZIER_CONTROL_POINT Output;
-    Output.position = float3(0,0,0);
-    
-    // !! PERFORMANCE NOTE: As mentioned above, this switch statement generates
-    // inefficient code for the sake of readability.
-    switch( i )
-    {
-    // Interior vertices
-    case 5:
-        Output.position = ComputeInteriorVertex( 0, Val, p ).xyz;
+	BEZIER_CONTROL_POINT Output;
+	Output.position = float3(0,0,0);
+	
+	// !! PERFORMANCE NOTE: As mentioned above, this switch statement generates
+	// inefficient code for the sake of readability.
+	switch( i )
+	{
+	// Interior vertices
+	case 5:
+		Output.position = ComputeInteriorVertex( 0, Val, p ).xyz;
 		Output.normal = ComputeInteriorNormal( 0, Val, p );
-        break;
-    case 6:
-        Output.position = ComputeInteriorVertex( 1, Val, p ).xyz;
+		break;
+	case 6:
+		Output.position = ComputeInteriorVertex( 1, Val, p ).xyz;
 		Output.normal = ComputeInteriorNormal( 1, Val, p );
-        break;
-    case 10:
-        Output.position = ComputeInteriorVertex( 2, Val, p ).xyz;
+		break;
+	case 10:
+		Output.position = ComputeInteriorVertex( 2, Val, p ).xyz;
 		Output.normal = ComputeInteriorNormal( 2, Val, p );
-        break;
-    case 9:
-        Output.position = ComputeInteriorVertex( 3, Val, p ).xyz;
+		break;
+	case 9:
+		Output.position = ComputeInteriorVertex( 3, Val, p ).xyz;
 		Output.normal = ComputeInteriorNormal( 3, Val, p );
-        break;
-        
-    // Corner vertices
-    case 0:
-        ComputeCorner( 0, CornerB, CornerN, p, Val, Prefixes );
-        Output.position = CornerB;
+		break;
+		
+	// Corner vertices
+	case 0:
+		ComputeCorner( 0, CornerB, CornerN, p, Val, Prefixes );
+		Output.position = CornerB;
 		Output.normal = CornerN;
-        break;
-    case 3:
-        ComputeCorner( 1, CornerB, CornerN, p, Val, Prefixes );
-        Output.position = CornerB;
+		break;
+	case 3:
+		ComputeCorner( 1, CornerB, CornerN, p, Val, Prefixes );
+		Output.position = CornerB;
 		Output.normal = CornerN;
-        break;
-    case 15:
-        ComputeCorner( 2, CornerB, CornerN, p, Val, Prefixes );
-        Output.position = CornerB;
+		break;
+	case 15:
+		ComputeCorner( 2, CornerB, CornerN, p, Val, Prefixes );
+		Output.position = CornerB;
 		Output.normal = CornerN;
-        break;
-    case 12:
-        ComputeCorner( 3, CornerB, CornerN, p, Val, Prefixes );
-        Output.position = CornerB;
+		break;
+	case 12:
+		ComputeCorner( 3, CornerB, CornerN, p, Val, Prefixes );
+		Output.position = CornerB;
 		Output.normal = CornerN;
-        break;
-        
-    // Edge vertices
-    case 1:
-        Output.position = ComputeEdgeVertex( 0, p, Val, Prefixes );
+		break;
+		
+	// Edge vertices
+	case 1:
+		Output.position = ComputeEdgeVertex( 0, p, Val, Prefixes );
 		Output.normal = ComputeEdgeNormal( 0, p, Val, Prefixes );
-        break;
-    case 2:
-        Output.position = ComputeEdgeVertex( 1, p, Val, Prefixes );
+		break;
+	case 2:
+		Output.position = ComputeEdgeVertex( 1, p, Val, Prefixes );
 		Output.normal = ComputeEdgeNormal( 1, p, Val, Prefixes );
-        break;
-    case 13:
-        Output.position = ComputeEdgeVertex( 2, p, Val, Prefixes );
+		break;
+	case 13:
+		Output.position = ComputeEdgeVertex( 2, p, Val, Prefixes );
 		Output.normal = ComputeEdgeNormal( 2, p, Val, Prefixes );
-        break;
-    case 14:
-        Output.position = ComputeEdgeVertex( 3, p, Val, Prefixes );
+		break;
+	case 14:
+		Output.position = ComputeEdgeVertex( 3, p, Val, Prefixes );
 		Output.normal = ComputeEdgeNormal( 3, p, Val, Prefixes );
-        break;
-    case 4:
-        Output.position = ComputeEdgeVertex( 4, p, Val, Prefixes );
+		break;
+	case 4:
+		Output.position = ComputeEdgeVertex( 4, p, Val, Prefixes );
 		Output.normal = ComputeEdgeNormal( 4, p, Val, Prefixes );
-        break;
-    case 8:
-        Output.position = ComputeEdgeVertex( 5, p, Val, Prefixes );
+		break;
+	case 8:
+		Output.position = ComputeEdgeVertex( 5, p, Val, Prefixes );
 		Output.normal = ComputeEdgeNormal( 5, p, Val, Prefixes );
-        break;
-    case 7:
-        Output.position = ComputeEdgeVertex( 6, p, Val, Prefixes );
+		break;
+	case 7:
+		Output.position = ComputeEdgeVertex( 6, p, Val, Prefixes );
 		Output.normal = ComputeEdgeNormal( 6, p, Val, Prefixes );
-        break;
-    case 11:
-        Output.position = ComputeEdgeVertex( 7, p, Val, Prefixes );
+		break;
+	case 11:
+		Output.position = ComputeEdgeVertex( 7, p, Val, Prefixes );
 		Output.normal = ComputeEdgeNormal( 7, p, Val, Prefixes );
-        break;
-    }
-    
-    return Output;
+		break;
+	}
+	
+	return Output;
 }
 
 [domain("quad")]
 DS_OUTPUT DS_ACC( HS_CONSTANT_ACC_OUTPUT input, 
-                        float2 UV : SV_DomainLocation,
-                        const OutputPatch<BEZIER_CONTROL_POINT, 16> bezpatch )
+						float2 UV : SV_DomainLocation,
+						const OutputPatch<BEZIER_CONTROL_POINT, 16> bezpatch )
 {
-    float4 BasisU = BernsteinBasisBiCubic( UV.x );
-    float4 BasisV = BernsteinBasisBiCubic( UV.y );
-    
-    float4 WorldPos = EvaluateBezierBiCubic( bezpatch[0].position,  bezpatch[1].position,  bezpatch[2].position,  bezpatch[3].position,
+	float4 BasisU = BernsteinBasisBiCubic( UV.x );
+	float4 BasisV = BernsteinBasisBiCubic( UV.y );
+	
+	float4 WorldPos = EvaluateBezierBiCubic( bezpatch[0].position,  bezpatch[1].position,  bezpatch[2].position,  bezpatch[3].position,
 											 bezpatch[4].position,  bezpatch[5].position,  bezpatch[6].position,  bezpatch[7].position,
 											 bezpatch[8].position,  bezpatch[9].position,  bezpatch[10].position, bezpatch[11].position,
 											 bezpatch[12].position, bezpatch[13].position, bezpatch[14].position, bezpatch[15].position,
@@ -820,28 +825,46 @@ DS_OUTPUT DS_ACC( HS_CONSTANT_ACC_OUTPUT input,
 											 bezpatch[4].normal,  bezpatch[5].normal,  bezpatch[6].normal,  bezpatch[7].normal,
 											 bezpatch[8].normal,  bezpatch[9].normal,  bezpatch[10].normal, bezpatch[11].normal,
 											 bezpatch[12].normal, bezpatch[13].normal, bezpatch[14].normal, bezpatch[15].normal,
-											 BasisU,			  BasisV);
+											 BasisU,			  BasisV).xyz;
 
-    DS_OUTPUT Output;
-    Output.normal = Normal;
+	DS_OUTPUT Output;
+	Output.normal = Normal;
 
-    // bilerp the texture coordinates    
-    float2 tex0 = input.texcoords[0];
-    float2 tex1 = input.texcoords[1];
-    float2 tex2 = input.texcoords[2];
-    float2 tex3 = input.texcoords[3];
-        
-    float2 bottom = lerp( tex0, tex1, UV.x );
-    float2 top = lerp( tex3, tex2, UV.x );
-    float2 TexUV = lerp( bottom, top, UV.y );
-    Output.texcoord = TexUV;
-    
+	// bilerp the texture coordinates    
+	float2 tex0 = input.texcoords[0];
+	float2 tex1 = input.texcoords[1];
+	float2 tex2 = input.texcoords[2];
+	float2 tex3 = input.texcoords[3];
+		
+	float2 bottom = lerp( tex0, tex1, UV.x );
+	float2 top = lerp( tex3, tex2, UV.x );
+	float2 TexUV = lerp( bottom, top, UV.y );
+	Output.texcoord = TexUV;
+	
 	Output.normal   = mul(Output.normal, (float3x3) World);
-    Output.position = mul(WorldPos, WorldViewProj );
-    Output.posworld = mul(WorldPos.xyz, (float3x3) World);
-    
-    return Output;    
+	Output.position = mul(WorldPos, WorldViewProj );
+	Output.posworld = mul(WorldPos.xyz, (float3x3) World);
+	
+	return Output;    
 }
+
+[maxvertexcount(2)]
+void GS_NORMALS(point DS_OUTPUT vertex[1], inout LineStream<DS_OUTPUT> lineStream)
+{
+	DS_OUTPUT output;
+
+	output.position = vertex[0].position;
+	output.normal = vertex[0].normal;
+	output.texcoord = vertex[0].texcoord;
+	output.posworld = vertex[0].posworld;
+	
+	lineStream.Append(output);
+	
+	output.position = output.position + (float4(output.normal, 1) * 0.1f);
+
+	lineStream.Append(output);
+
+} 
 
 //----------------------------------------------------------------------------------------
 // Pixel Shaders & Techniques
@@ -867,6 +890,11 @@ float4 PS(DS_OUTPUT input) : SV_Target
 	return PhongLighting(input.normal, input.posworld);
 }
 
+float4 PS_NORMALS(DS_OUTPUT input) : SV_Target
+{
+	return float4(input.normal, 1) * -1;
+}
+
 technique11 RenderFlat
 {
 	pass P0
@@ -877,6 +905,15 @@ technique11 RenderFlat
 		SetHullShader	(CompileShader(hs_5_0, HS_FLAT()));
 		SetDomainShader	(CompileShader(ds_5_0, DS_FLAT()));
 		SetPixelShader	(CompileShader(ps_5_0, PS()));
+	}
+	pass P1
+	{
+		SetGeometryShader(CompileShader(gs_5_0, GS_NORMALS()));
+
+		SetVertexShader	(CompileShader(vs_5_0, VS()));
+		SetHullShader	(CompileShader(hs_5_0, HS_FLAT()));
+		SetDomainShader	(CompileShader(ds_5_0, DS_FLAT()));
+		SetPixelShader	(CompileShader(ps_5_0, PS_NORMALS()));
 	}
 }
 
@@ -891,6 +928,15 @@ technique11 RenderPhongTess
 		SetDomainShader	(CompileShader(ds_5_0, DS_PHONG()));
 		SetPixelShader	(CompileShader(ps_5_0, PS()));
 	}
+	pass P1
+	{
+		SetGeometryShader(CompileShader(gs_5_0, GS_NORMALS()));
+
+		SetVertexShader	(CompileShader(vs_5_0, VS()));
+		SetHullShader	(CompileShader(hs_5_0, HS_FLAT()));
+		SetDomainShader	(CompileShader(ds_5_0, DS_PHONG()));
+		SetPixelShader	(CompileShader(ps_5_0, PS_NORMALS()));
+	}
 }
 
 technique11 RenderPNQuads
@@ -904,6 +950,15 @@ technique11 RenderPNQuads
 		SetDomainShader	(CompileShader(ds_5_0, DS_PNQUAD()));
 		SetPixelShader	(CompileShader(ps_5_0, PS()));
 	}
+	pass P1
+	{
+		SetGeometryShader(CompileShader(gs_5_0, GS_NORMALS()));
+
+		SetVertexShader	(CompileShader(vs_5_0, VS()));
+		SetHullShader	(CompileShader(hs_5_0, HS_PNQUAD()));
+		SetDomainShader	(CompileShader(ds_5_0, DS_PNQUAD()));
+		SetPixelShader	(CompileShader(ps_5_0, PS_NORMALS()));
+	}
 }
 
 technique11 RenderACC
@@ -916,5 +971,14 @@ technique11 RenderACC
 		SetHullShader	(CompileShader(hs_5_0, HS_ACC()));
 		SetDomainShader	(CompileShader(ds_5_0, DS_ACC()));
 		SetPixelShader	(CompileShader(ps_5_0, PS()));
+	}
+	pass P1
+	{
+		SetGeometryShader(CompileShader(gs_5_0, GS_NORMALS()));
+
+		SetVertexShader	(CompileShader(vs_5_0, VS()));
+		SetHullShader	(CompileShader(hs_5_0, HS_ACC()));
+		SetDomainShader	(CompileShader(ds_5_0, DS_ACC()));
+		SetPixelShader	(CompileShader(ps_5_0, PS_NORMALS()));
 	}
 }

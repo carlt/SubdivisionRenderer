@@ -20,16 +20,7 @@ namespace SubdivisionRenderer
 		private static readonly List<string> Models = new List<string>();
 		private static int _currentModelIndex;
 
-		private static RenderParameters _renderParameters = 
-			new RenderParameters {
-				WireFrame = false,
-				TessellationFactor = 1f,
-				TessellationStep = 0.25f,
-				Textured = false,
-				FlatShading = false,
-				TicksLastFrame = 200,
-				FrameRate = 100f
-			};
+		private static RenderParameters _renderParameters = RenderParameters.Default();
 
 		[STAThread]
 		static void Main()
@@ -86,12 +77,13 @@ namespace SubdivisionRenderer
 		private static void UpdateTitle(Control renderForm)
 		{
 			renderForm.Text =
-				String.Format("{0} fps | Subdivion: {1} | TessellationFactor: {2} | Textures: {3} | Wireframe: {4}",
+				String.Format("{0} fps | Subdivion: {1} | TessellationFactor: {2} | Textures: {3} | Wireframe: {4} | Faces: {5}",
 				_renderParameters.FrameRate.ToString("F0", CultureInfo.InvariantCulture),
 				_modelRenderer.GetSubdivisionMode(),
-				_renderParameters.TessellationFactor.ToString("F0", CultureInfo.InvariantCulture),
+				_renderParameters.TessellationFactor.ToString("0.0", CultureInfo.InvariantCulture),
 				_renderParameters.Textured ? "ON" : "OFF",
-				_renderParameters.WireFrame ? "ON" : "OFF");
+				_renderParameters.WireFrame ? "ON" : "OFF",
+				_modelRenderer.GetFaceCount() * Math.Floor(_renderParameters.TessellationFactor) * Math.Floor(_renderParameters.TessellationFactor));
 		}
 
 		private static void FindModels()
@@ -114,57 +106,55 @@ namespace SubdivisionRenderer
 
 		private static void HandleKeyboardStart(Object sender, KeyEventArgs e)
 		{
-			if (e.KeyCode == Controls.Shader1)
+			switch (e.KeyCode)
 			{
-				_modelRenderer.ChangeShader(ShaderMode.Flat);
-			}
-			else if (e.KeyCode == Controls.Shader2)
-			{
-				_modelRenderer.ChangeShader(ShaderMode.Phong);
-			}
-			else if (e.KeyCode == Controls.Shader3)
-			{
-				_modelRenderer.ChangeShader(ShaderMode.PnQuads);
-			}
-			else if (e.KeyCode == Controls.Shader4)
-			{
-				_modelRenderer.ChangeShader(ShaderMode.Acc);
-			}
-			else if (e.KeyCode == Controls.Wireframe)
-			{
-				_renderParameters.WireFrame = !_renderParameters.WireFrame;
-				_dxManager.ChangeWireframe(_renderParameters.WireFrame);
-			}
-			else if (e.KeyCode == Controls.ShadingToggle)
-			{
-				_renderParameters.FlatShading = !_renderParameters.FlatShading;
-			}
-			else if (e.KeyCode == Controls.TessFactorUp)
-			{
-				_renderParameters.TessellationFactor =
-					_renderParameters.TessellationFactor + _renderParameters.TessellationStep > 64f
-					? _renderParameters.TessellationFactor
-					: _renderParameters.TessellationFactor + _renderParameters.TessellationStep;
-			}
-			else if (e.KeyCode == Controls.TessFactorDown)
-			{
-				_renderParameters.TessellationFactor =
-					_renderParameters.TessellationFactor - _renderParameters.TessellationStep < 1f
-					? _renderParameters.TessellationFactor
-					: _renderParameters.TessellationFactor - _renderParameters.TessellationStep;
-			}
-			else if (e.KeyCode == Controls.TextureToggle)
-			{
-				_renderParameters.Textured = !_renderParameters.Textured;
-			}
-			else if (e.KeyCode == Controls.ChangeModel)
-			{
-				_currentModelIndex = (_currentModelIndex + 1) % Models.Count;
-				_modelRenderer.Model = new Model(Models[_currentModelIndex]);
-			}
-			else
-			{
-				Camera.HandleKeyboardStart(e);
+				case Controls.Shader1:
+					_modelRenderer.ChangeShader(ShaderMode.Bilinear);
+					break;
+				case Controls.Shader2:
+					_modelRenderer.ChangeShader(ShaderMode.Phong);
+					break;
+				case Controls.Shader3:
+					_modelRenderer.ChangeShader(ShaderMode.PnQuads);
+					break;
+				case Controls.Shader4:
+					_modelRenderer.ChangeShader(ShaderMode.Acc);
+					break;
+				case Controls.Wireframe:
+					_renderParameters.WireFrame = !_renderParameters.WireFrame;
+					_dxManager.ChangeWireframe(_renderParameters.WireFrame);
+					break;
+				case Controls.ShadingToggle:
+					_renderParameters.FlatShading = !_renderParameters.FlatShading;
+					break;
+				case Controls.DisplayNormals:
+					_renderParameters.DisplayNormals = !_renderParameters.DisplayNormals;
+					break;
+				case Controls.TessFactorUp:
+					_renderParameters.TessellationFactor =
+						_renderParameters.TessellationFactor + _renderParameters.TessellationStep > 64f
+							? _renderParameters.TessellationFactor
+							: _renderParameters.TessellationFactor + _renderParameters.TessellationStep;
+					break;
+				case Controls.TessFactorDown:
+					_renderParameters.TessellationFactor =
+						_renderParameters.TessellationFactor - _renderParameters.TessellationStep < 1f
+							? _renderParameters.TessellationFactor
+							: _renderParameters.TessellationFactor - _renderParameters.TessellationStep;
+					break;
+				case Controls.TextureToggle:
+					_renderParameters.Textured = !_renderParameters.Textured;
+					break;
+				case Controls.ChangeModel:
+					_currentModelIndex = (_currentModelIndex + 1) % Models.Count;
+					_modelRenderer.Model = new Model(Models[_currentModelIndex]);
+					break;
+				case Controls.Reset:
+					Camera.Reset();
+					break;
+				default:
+					Camera.HandleKeyboardStart(e);
+					break;
 			}
 		}
 
@@ -200,6 +190,33 @@ namespace SubdivisionRenderer
 
 			if (_modelRenderer != null)
 				_modelRenderer.Dispose();
+		}
+	}
+
+	struct RenderParameters
+	{
+		public bool WireFrame;
+		public float TessellationFactor;
+		public float TessellationStep;
+		public bool Textured;
+		public bool FlatShading;
+		public bool DisplayNormals;
+		public long TicksLastFrame;
+		public float FrameRate;
+
+		public static RenderParameters Default()
+		{
+			return new RenderParameters
+			{
+				WireFrame = false,
+				TessellationFactor = 1f,
+				TessellationStep = 0.25f,
+				Textured = false,
+				FlatShading = false,
+				DisplayNormals = false,
+				TicksLastFrame = 200,
+				FrameRate = 100f
+			};
 		}
 	}
 }

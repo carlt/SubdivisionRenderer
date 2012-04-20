@@ -36,10 +36,10 @@ namespace SubdivisionRenderer
 
 		private EffectVectorVariable _phongParameters;
 		private EffectVectorVariable _ambientLightColor;
-		private EffectVectorVariable _directionalLightColor;
-		private EffectVectorVariable _directionalLightDirection;
-		private EffectVectorVariable _directionalLight2Color;
-		private EffectVectorVariable _directionalLight2Direction;
+		private EffectVectorVariable _lightColor;
+		private EffectVectorVariable _lightDirection;
+		private EffectVectorVariable _light2Color;
+		private EffectVectorVariable _light2Direction;
 		private EffectVectorVariable _cameraPosition;
 		private EffectScalarVariable _flatShading;
 
@@ -55,7 +55,7 @@ namespace SubdivisionRenderer
 		{
 			_device = device;
 			Model = model;
-			_currentShader = ShaderMode.Flat;
+			_currentShader = ShaderMode.Bilinear;
 			CompileShaders(Path.Combine("Textures", "Texture.dds"), Path.Combine("Shaders", "Tessellation.hlsl"));
 		}
 
@@ -82,10 +82,10 @@ namespace SubdivisionRenderer
 
 			// Setup Lighting Variables
 			_phongParameters = _shaderEffect.GetVariableByName("AmbSpecDiffShini").AsVector();
-			_directionalLightColor = _shaderEffect.GetVariableByName("LightColor").AsVector();
-			_directionalLightDirection = _shaderEffect.GetVariableByName("LightDirection").AsVector();
-			_directionalLight2Color = _shaderEffect.GetVariableByName("Light2Color").AsVector();
-			_directionalLight2Direction = _shaderEffect.GetVariableByName("Light2Direction").AsVector();
+			_lightColor = _shaderEffect.GetVariableByName("LightColor").AsVector();
+			_lightDirection = _shaderEffect.GetVariableByName("LightDirection").AsVector();
+			_light2Color = _shaderEffect.GetVariableByName("Light2Color").AsVector();
+			_light2Direction = _shaderEffect.GetVariableByName("Light2Direction").AsVector();
 			_ambientLightColor = _shaderEffect.GetVariableByName("AmbientLight").AsVector();
 			_cameraPosition = _shaderEffect.GetVariableByName("Eye").AsVector();
 			_flatShading = _shaderEffect.GetVariableByName("FlatShading").AsScalar();
@@ -108,6 +108,12 @@ namespace SubdivisionRenderer
 				// Draw
 				_shaderEffectPass.Apply(_device.ImmediateContext);
 				_device.ImmediateContext.DrawIndexed(Model.Faces.Count * 4, 0, 0);
+				
+				if (parameters.DisplayNormals)
+				{
+					_shaderEffect.GetTechniqueByIndex((int)_currentShader).GetPassByIndex(1).Apply(_device.ImmediateContext);
+					_device.ImmediateContext.DrawIndexed(Model.Faces.Count * 4, 0, 0);
+				}
 			}
 			else
 			{
@@ -120,6 +126,12 @@ namespace SubdivisionRenderer
 				// Draw
 				_shaderEffectPass.Apply(_device.ImmediateContext);
 				_device.ImmediateContext.DrawIndexed(Model.AccPatches.Count * 32, 0, 0);
+
+				if (parameters.DisplayNormals)
+				{
+					_shaderEffect.GetTechniqueByIndex((int)_currentShader).GetPassByIndex(1).Apply(_device.ImmediateContext);
+					_device.ImmediateContext.DrawIndexed(Model.AccPatches.Count * 32, 0, 0);
+				}
 			}
 		}
 
@@ -138,10 +150,10 @@ namespace SubdivisionRenderer
 
 			// Set Lighting
 			_phongParameters.Set(Lighting.PhongParameters.AsVector());
-			_directionalLightColor.Set(Lighting.DirectionalLightColor);
-			_directionalLightDirection.Set(Lighting.DirectionalLightDirection);
-			_directionalLight2Color.Set(Lighting.DirectionalLight2Color);
-			_directionalLight2Direction.Set(Lighting.DirectionalLight2Direction);
+			_lightColor.Set(Lighting.DirectionalLightColor);
+			_lightDirection.Set(Lighting.DirectionalLightDirection);
+			_light2Color.Set(Lighting.DirectionalLight2Color);
+			_light2Direction.Set(Lighting.DirectionalLight2Direction);
 			_ambientLightColor.Set(Lighting.AmbientLightColor);
 			_cameraPosition.Set(Camera.Eye);
 			
@@ -154,7 +166,7 @@ namespace SubdivisionRenderer
 		{
 			switch (_currentShader)
 			{
-				case ShaderMode.Flat:
+				case ShaderMode.Bilinear:
 					return "Bilinear";
 				case ShaderMode.Phong:
 					return "Phong";
@@ -169,6 +181,8 @@ namespace SubdivisionRenderer
 
 		private void SetupBuffers()
 		{
+			if (Model.Faces.Count == 0) return;
+
 			var allPoints = Model.Faces.SelectMany(f => f.Points).ToList();
 
 			var indexBufferContents = Model.Faces.SelectMany(face => face.Points).Select(point => Convert.ToUInt32(allPoints.FindIndex(p => p == point))).ToList();
@@ -180,42 +194,42 @@ namespace SubdivisionRenderer
 				}).ToList();
 
 			// Create normal VertexBuffer
-			var stream = new DataStream(vertexBufferContents.Count * VertexShaderInput.SizeInBytes, true, true);
+			var vertexStream = new DataStream(vertexBufferContents.Count * VertexShaderInput.SizeInBytes, true, true);
 
 			foreach (var vertexInfo in vertexBufferContents)
-				stream.Write(vertexInfo);
+				vertexStream.Write(vertexInfo);
 
-			stream.Position = 0;
+			vertexStream.Position = 0;
 
-			_vertexBuffer = new Buffer(_device, stream,
+			_vertexBuffer = new Buffer(_device, vertexStream,
 				new BufferDescription {
 					BindFlags = BindFlags.VertexBuffer,
 					CpuAccessFlags = CpuAccessFlags.None,
 					OptionFlags = ResourceOptionFlags.None,
-					SizeInBytes = vertexBufferContents.Count * VertexShaderInput.SizeInBytes,
+					SizeInBytes = (int) vertexStream.Length,
 					Usage = ResourceUsage.Default
 				});
 
-			stream.Dispose();
+			vertexStream.Dispose();
 
 			// Create normal IndexBuffer
-			stream = new DataStream(indexBufferContents.Count * Marshal.SizeOf(typeof(uint)), true, true);
+			var indexStream = new DataStream(indexBufferContents.Count * Marshal.SizeOf(typeof(uint)), true, true);
 
 			foreach (var indexInfo in indexBufferContents)
-				stream.Write(indexInfo);
+				indexStream.Write(indexInfo);
 
-			stream.Position = 0;
+			indexStream.Position = 0;
 
-			_indexBuffer = new Buffer(_device, stream,
+			_indexBuffer = new Buffer(_device, indexStream,
 				new BufferDescription {
 					BindFlags = BindFlags.IndexBuffer,
 					CpuAccessFlags = CpuAccessFlags.None,
 					OptionFlags = ResourceOptionFlags.None,
-					SizeInBytes = indexBufferContents.Count * Marshal.SizeOf(typeof(uint)),
+					SizeInBytes = (int) indexStream.Length,
 					Usage = ResourceUsage.Default
 				});
 
-			stream.Dispose();
+			indexStream.Dispose();
 
 			SetupAccBuffers();
 		}
@@ -232,49 +246,49 @@ namespace SubdivisionRenderer
 
 			// Acc index buffer
 
-			var stream = new DataStream(accIndexBuffer.Count * Marshal.SizeOf(typeof(uint)), true, true);
+			var indexStream = new DataStream(accIndexBuffer.Count * Marshal.SizeOf(typeof(uint)), true, true);
 
 			foreach (var indexInfo in accIndexBuffer)
-				stream.Write(indexInfo);
+				indexStream.Write(indexInfo);
 
-			stream.Position = 0;
+			indexStream.Position = 0;
 
-			_accIndexBuffer = new Buffer(_device, stream,
+			_accIndexBuffer = new Buffer(_device, indexStream,
 				new BufferDescription {
 					BindFlags = BindFlags.IndexBuffer,
 					CpuAccessFlags = CpuAccessFlags.None,
 					OptionFlags = ResourceOptionFlags.None,
-					SizeInBytes = accIndexBuffer.Count * Marshal.SizeOf(typeof(uint)),
+					SizeInBytes = (int) indexStream.Length,
 					Usage = ResourceUsage.Default
 				});
 
-			stream.Dispose();
+			indexStream.Dispose();
 
 			// Valence[4] and Prefix[4] buffer
 
-			stream = new DataStream(Model.AccPatches.Count * 8 * Marshal.SizeOf(typeof(uint)), true, true);
+			var valencePrefixStream = new DataStream(Model.AccPatches.Count * 8 * Marshal.SizeOf(typeof(uint)), true, true);
 
 			foreach (var extraordinaryPatch in Model.AccPatches)
 			{
 				foreach (var valence in extraordinaryPatch.Valences)
-					stream.Write(Convert.ToUInt32(valence));
+					valencePrefixStream.Write(Convert.ToUInt32(valence));
 
 				foreach (var prefix in extraordinaryPatch.Prefixes)
-					stream.Write(Convert.ToUInt32(prefix));
+					valencePrefixStream.Write(Convert.ToUInt32(prefix));
 			}
 
-			stream.Position = 0;
+			valencePrefixStream.Position = 0;
 
-			_valencePrefixBuffer = new Buffer(_device, stream,
+			_valencePrefixBuffer = new Buffer(_device, valencePrefixStream,
 				new BufferDescription {
 					BindFlags = BindFlags.ShaderResource,
 					CpuAccessFlags = CpuAccessFlags.None,
 					OptionFlags = ResourceOptionFlags.None,
-					SizeInBytes = Model.AccPatches.Count * 8 * Marshal.SizeOf(typeof(uint)),
+					SizeInBytes = (int) valencePrefixStream.Length,
 					Usage = ResourceUsage.Default
 				});
 
-			stream.Dispose();
+			valencePrefixStream.Dispose();
 
 			_valencePrefixView = new ShaderResourceView(_device, _valencePrefixBuffer,
 				new ShaderResourceViewDescription {
@@ -308,24 +322,18 @@ namespace SubdivisionRenderer
 			if (_valencePrefixView != null)
 				_valencePrefixView.Dispose();
 		}
+
+		public int GetFaceCount()
+		{
+			return Model.Faces.Count;
+		}
 	}
 
 	enum ShaderMode
 	{
-		Flat,
+		Bilinear,
 		Phong,
 		PnQuads,
 		Acc
-	}
-
-	struct RenderParameters
-	{
-		public bool WireFrame;
-		public float TessellationFactor;
-		public float TessellationStep;
-		public long TicksLastFrame;
-		public bool Textured;
-		public bool FlatShading;
-		public float FrameRate;
 	}
 }

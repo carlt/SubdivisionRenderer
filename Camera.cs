@@ -16,7 +16,7 @@ namespace SubdivisionRenderer
 		public static Vector3 Up = new Vector3(0f, 1f, 0f);
 
 		// Projection
-		public static float Fov = (float) Math.PI * 0.5f;
+		public static float Fov = (float) Math.PI * 0.4f;
 		public static float Aspect = (float) 800 / 600;
 
 		// Movement

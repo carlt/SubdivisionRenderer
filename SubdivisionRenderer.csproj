@@ -93,7 +93,7 @@
     <None Include="Models\0_sphere.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Models\4_head.obj">
+    <None Include="Models\3_head.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Models\2_tree.obj">
@@ -105,7 +105,7 @@
     <None Include="Models\1_subdbox.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Models\3_testshape.obj">
+    <None Include="Models\4_testshape.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="README.md" />

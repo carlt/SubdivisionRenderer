@@ -13,7 +13,9 @@ namespace SubdivisionRenderer
 		public const Keys TessFactorDown	= Keys.E;
 		public const Keys TextureToggle		= Keys.T;
 		public const Keys ShadingToggle		= Keys.F;
+		public const Keys DisplayNormals	= Keys.N;
 		public const Keys ChangeModel		= Keys.C;
+		public const Keys Reset				= Keys.R;
 
 		public const Keys MoveForward		= Keys.W;
 		public const Keys MoveBackward		= Keys.S;

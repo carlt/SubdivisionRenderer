@@ -139,43 +139,34 @@ namespace SubdivisionRenderer
 			patch.Prefixes.Clear();
 
 			// v0
-			others[0] = v1;
-			others[1] = v2;
-			others[2] = v3;
-
-			patch.Valences.Add(ConditionPoint(v0, others, ref neighborPoints));
+			others[0] = v1; others[1] = v2; others[2] = v3;
+			patch.Valences.Add(ConditionPoint(v0, others, neighborPoints));
 			patch.Prefixes.Add(neighborPoints.Count + 4);
 
 			// v1
-			others[0] = v2;
-			others[1] = v3;
-			others[2] = v0;
-			patch.Valences.Add(ConditionPoint(v1, others, ref neighborPoints));
+			others[0] = v2; others[1] = v3; others[2] = v0;
+			patch.Valences.Add(ConditionPoint(v1, others, neighborPoints));
 			patch.Prefixes.Add(neighborPoints.Count + 4);
 
 			// v2
-			others[0] = v3;
-			others[1] = v0;
-			others[2] = v1;
-			patch.Valences.Add(ConditionPoint(v2, others, ref neighborPoints));
+			others[0] = v3; others[1] = v0; others[2] = v1;
+			patch.Valences.Add(ConditionPoint(v2, others, neighborPoints));
 			patch.Prefixes.Add(neighborPoints.Count + 4);
 
 			// v3
-			others[0] = v0;
-			others[1] = v1;
-			others[2] = v2;
-			patch.Valences.Add(ConditionPoint(v3, others, ref neighborPoints));
+			others[0] = v0; others[1] = v1; others[2] = v2;
+			patch.Valences.Add(ConditionPoint(v3, others, neighborPoints));
 			patch.Prefixes.Add(neighborPoints.Count + 4);
 
 			patch.Points.AddRange(neighborPoints);
 		}
 
-		private int ConditionPoint(Point p, IList<Point> others, ref List<Point> neighborPoints)
+		private int ConditionPoint(Point p, IList<Point> others, List<Point> neighborPoints)
 		{
 			var startNeighborPoints = neighborPoints.Count;
 
 			var currentQuad = FindQuadWithPointsAbNotC(p, others[2], others[0]);
-			var endQuad = FindQuadWithPointsAbNotC(p, others[0], others[2]);
+			var endQuad		= FindQuadWithPointsAbNotC(p, others[0], others[2]);
 
 			var farEdgePoint = currentQuad.Points.FindIndex(point => point.PositionIndex == others[2].PositionIndex);
 			var offEdgePoint = currentQuad.Points[(farEdgePoint + 1) % 4];
