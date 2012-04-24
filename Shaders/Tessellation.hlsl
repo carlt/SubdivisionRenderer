@@ -375,11 +375,6 @@ HSCONSTANT_PNQUAD_OUTPUT HSCONSTANT_PNQUAD(InputPatch<VS_OUTPUT, 4> inputPatch, 
 	output.EdgeNormals[2] = Nij(inputPatch[2].position.xyz, inputPatch[3].position.xyz, inputPatch[2].normal, inputPatch[3].normal);
 	output.EdgeNormals[3] = Nij(inputPatch[3].position.xyz, inputPatch[0].position.xyz, inputPatch[3].normal, inputPatch[0].normal);
 
-	//output.EdgeNormals[0] = Nij(inputPatch[0].position.xyz, inputPatch[1].position.xyz, inputPatch[0].normal, inputPatch[1].normal);
-	//output.EdgeNormals[1] = Nij(inputPatch[1].position.xyz, inputPatch[2].position.xyz, inputPatch[1].normal, inputPatch[2].normal);
-	//output.EdgeNormals[2] = Nij(inputPatch[2].position.xyz, inputPatch[3].position.xyz, inputPatch[2].normal, inputPatch[3].normal);
-	//output.EdgeNormals[3] = Nij(inputPatch[3].position.xyz, inputPatch[0].position.xyz, inputPatch[3].normal, inputPatch[0].normal);
-
 	output.CenterNormal = 2.0 * (output.EdgeNormals[0] + output.EdgeNormals[1] + output.EdgeNormals[2] + output.EdgeNormals[3]); 
 	output.CenterNormal += inputPatch[0].normal + inputPatch[1].normal + inputPatch[2].normal + inputPatch[3].normal;
 	output.CenterNormal /= 12;
@@ -408,7 +403,7 @@ DS_OUTPUT DS_PNQUAD(HSCONSTANT_PNQUAD_OUTPUT input, float2 uv : SV_DomainLocatio
 	float3 basisVQuad = BernsteinBasisBiQuad(uv.y);
 
 	output.normal = EvaluateBezierBiQuad(	inputPatch[0].normal,	input.EdgeNormals[0],	inputPatch[1].normal,
-											input.EdgeNormals[3],	input.CenterNormal,		input.EdgeNormals[2],
+											input.EdgeNormals[3],	input.CenterNormal,		input.EdgeNormals[1],
 											inputPatch[3].normal,	input.EdgeNormals[2],	inputPatch[2].normal,
 											basisUQuad,				basisVQuad);
 
