@@ -24,8 +24,9 @@ namespace SubdivisionRenderer
 		private InputLayout _inputLayout;
 		private Effect _shaderEffect;
 		private EffectPass _shaderEffectPass;
-		private ShaderMode _currentShader;
 
+		public RenderParameters RenderParameters { get; set; }
+		
 		private EffectMatrixVariable _world;
 		private EffectMatrixVariable _worldViewProjection;
 		private EffectScalarVariable _tessFactor;
@@ -55,20 +56,83 @@ namespace SubdivisionRenderer
 		{
 			_device = device;
 			Model = model;
-			_currentShader = ShaderMode.Bilinear;
+
+			RenderParameters = new RenderParameters();
+
 			CompileShaders(Path.Combine("Textures", "Texture.dds"), Path.Combine("Shaders", "Tessellation.hlsl"));
 		}
 
-		public void ChangeShader(ShaderMode shader)
+		public void Render()
 		{
-			_currentShader = shader;
-			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int) shader).GetPassByIndex(0);		
+			_device.ImmediateContext.InputAssembler.InputLayout = _inputLayout;
+			_device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(_vertexBuffer, VertexShaderInput.SizeInBytes, 0));
+
+			SetRenderParameters();
+
+			if (RenderParameters.ShaderMode == ShaderMode.Acc)
+			{
+				_device.ImmediateContext.InputAssembler.SetIndexBuffer(_accIndexBuffer, Format.R32_UInt, 0);
+				_device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.PatchListWith32ControlPoints;
+			}
+			else
+			{
+				_device.ImmediateContext.InputAssembler.SetIndexBuffer(_indexBuffer, Format.R32_UInt, 0);
+				_device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.PatchListWith4ControlPoints;
+			}
+
+			var drawCount = RenderParameters.ShaderMode == ShaderMode.Acc ? Model.AccPatches.Count * 32 : Model.Faces.Count * 4;
+
+			// Draw
+			_shaderEffectPass.Apply(_device.ImmediateContext);
+			_device.ImmediateContext.DrawIndexed(drawCount, 0, 0);
+
+			if (!RenderParameters.DisplayNormals) return;
+			
+			_shaderEffect.GetTechniqueByIndex((int) RenderParameters.ShaderMode).GetPassByIndex(1).Apply(_device.ImmediateContext);
+			_device.ImmediateContext.DrawIndexed(drawCount, 0, 0);
+		}
+
+		private void SetRenderParameters()
+		{
+			ChangeShader(RenderParameters.ShaderMode);
+
+			// Update Camera
+			_world.SetMatrix(RenderParameters.Camera.World());
+			_worldViewProjection.SetMatrix(RenderParameters.Camera.WorldViewProjection());
+
+			// Set Texture
+			_textureMap.SetResource(_textureView);
+			_enableTexture.Set(RenderParameters.Textured);
+
+			// Set Tesselation
+			_tessFactor.Set(RenderParameters.TessellationFactor);
+
+			// Set Lighting
+			_phongParameters.Set(RenderParameters.Lighting.PhongParameters.AsVector());
+			_lightColor.Set(RenderParameters.Lighting.Lights[0].Color);
+			_lightDirection.Set(RenderParameters.Lighting.Lights[0].Direction);
+			_light2Color.Set(RenderParameters.Lighting.Lights[1].Color);
+			_light2Direction.Set(RenderParameters.Lighting.Lights[1].Direction);
+			_ambientLightColor.Set(RenderParameters.Lighting.AmbientLightColor);
+			_cameraPosition.Set(RenderParameters.Camera.Eye);
+			
+			// Set Options
+			_flatShading.Set(RenderParameters.FlatShading);
+			_enableWireframe.Set(RenderParameters.WireFrame);
+
+			// ACC prefix buffer
+			_valencePrefixResource.SetResource(_valencePrefixView);
+		}
+
+		private void ChangeShader(ShaderMode shader)
+		{
+			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int)shader).GetPassByIndex(0);
 		}
 
 		private void CompileShaders(string texturePath, string shaderPath)
 		{
 			_shaderEffect = new Effect(_device, ShaderBytecode.CompileFromFile(shaderPath, "fx_5_0", ShaderFlags.None, EffectFlags.None));
-			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int) _currentShader).GetPassByIndex(0);
+			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int) RenderParameters.ShaderMode).GetPassByIndex(0);
 			_inputLayout = new InputLayout(_device, _shaderEffectPass.Description.Signature, VertexShaderInput.InputLayout);
 
 			// Setup Global Variables
@@ -93,91 +157,6 @@ namespace SubdivisionRenderer
 			_valencePrefixResource = _shaderEffect.GetVariableByName("ValencePrefixBuffer").AsResource();
 		}
 
-		public void Render(RenderParameters parameters)
-		{
-			_device.ImmediateContext.InputAssembler.InputLayout = _inputLayout;
-			_device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(_vertexBuffer, VertexShaderInput.SizeInBytes, 0));
-
-			if (_currentShader != ShaderMode.Acc)
-			{
-				_device.ImmediateContext.InputAssembler.SetIndexBuffer(_indexBuffer, Format.R32_UInt, 0);
-				_device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.PatchListWith4ControlPoints;
-
-				SetRenderParameters(parameters);
-
-				// Draw
-				_shaderEffectPass.Apply(_device.ImmediateContext);
-				_device.ImmediateContext.DrawIndexed(Model.Faces.Count * 4, 0, 0);
-				
-				if (parameters.DisplayNormals)
-				{
-					_shaderEffect.GetTechniqueByIndex((int)_currentShader).GetPassByIndex(1).Apply(_device.ImmediateContext);
-					_device.ImmediateContext.DrawIndexed(Model.Faces.Count * 4, 0, 0);
-				}
-			}
-			else
-			{
-				_device.ImmediateContext.InputAssembler.SetIndexBuffer(_accIndexBuffer, Format.R32_UInt, 0);
-				_device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.PatchListWith32ControlPoints;
-
-				_valencePrefixResource.SetResource(_valencePrefixView);
-				SetRenderParameters(parameters);
-
-				// Draw
-				_shaderEffectPass.Apply(_device.ImmediateContext);
-				_device.ImmediateContext.DrawIndexed(Model.AccPatches.Count * 32, 0, 0);
-
-				if (parameters.DisplayNormals)
-				{
-					_shaderEffect.GetTechniqueByIndex((int)_currentShader).GetPassByIndex(1).Apply(_device.ImmediateContext);
-					_device.ImmediateContext.DrawIndexed(Model.AccPatches.Count * 32, 0, 0);
-				}
-			}
-		}
-
-		private void SetRenderParameters(RenderParameters parameters)
-		{
-			// Update Camera
-			_world.SetMatrix(Camera.World());
-			_worldViewProjection.SetMatrix(Camera.WorldViewProjection());
-
-			// Set Texture
-			_textureMap.SetResource(_textureView);
-			_enableTexture.Set(parameters.Textured);
-
-			// Set Tesselation
-			_tessFactor.Set(parameters.TessellationFactor);
-
-			// Set Lighting
-			_phongParameters.Set(Lighting.PhongParameters.AsVector());
-			_lightColor.Set(Lighting.DirectionalLightColor);
-			_lightDirection.Set(Lighting.DirectionalLightDirection);
-			_light2Color.Set(Lighting.DirectionalLight2Color);
-			_light2Direction.Set(Lighting.DirectionalLight2Direction);
-			_ambientLightColor.Set(Lighting.AmbientLightColor);
-			_cameraPosition.Set(Camera.Eye);
-			
-			// Set Options
-			_flatShading.Set(parameters.FlatShading);
-			_enableWireframe.Set(parameters.WireFrame);
-		}
-
-		public string GetSubdivisionMode()
-		{
-			switch (_currentShader)
-			{
-				case ShaderMode.Bilinear:
-					return "Bilinear";
-				case ShaderMode.Phong:
-					return "Phong";
-				case ShaderMode.PnQuads:
-					return "PN Quads";
-				case ShaderMode.Acc:
-					return "ACC";
-				default:
-					return "Unknown";
-			}
-		}
 
 		private void SetupBuffers()
 		{
@@ -322,18 +301,5 @@ namespace SubdivisionRenderer
 			if (_valencePrefixView != null)
 				_valencePrefixView.Dispose();
 		}
-
-		public int GetFaceCount()
-		{
-			return Model.Faces.Count;
-		}
-	}
-
-	enum ShaderMode
-	{
-		Bilinear,
-		Phong,
-		PnQuads,
-		Acc
 	}
 }

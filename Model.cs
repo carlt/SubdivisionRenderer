@@ -10,16 +10,13 @@ namespace SubdivisionRenderer
 {
 	public class Model 
 	{
-		public const int MaxValence = 16;
-
 		public List<Vector4> Vertices { get; private set; }
 		public List<Vector3> Normals { get; private set; }
 		public List<Vector2> Textures { get; private set; }
 		public List<Face> Faces { get; private set; }
+		public List<AccPatch> AccPatches { get; private set; }
 
 		private readonly Dictionary<int, List<AccPatch>> _pointLookUp = new Dictionary<int, List<AccPatch>>(); 
-		
-		public readonly List<AccPatch> AccPatches = new List<AccPatch>();
 
 		public Model(string path)
 		{
@@ -27,6 +24,7 @@ namespace SubdivisionRenderer
 			Normals = new List<Vector3>();
 			Textures = new List<Vector2>();
 			Faces = new List<Face>();
+			AccPatches = new List<AccPatch>();
 
 			Load(path);
 			SetupAccPatches();

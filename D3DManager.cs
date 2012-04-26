@@ -12,9 +12,10 @@ namespace SubdivisionRenderer
 	{
 		public readonly Device Device;
 		public readonly SwapChain SwapChain;
-		public RenderTargetView RenderTargetView;
-		public DepthStencilView DepthStencilView;
-		
+
+		public RenderTargetView RenderTargetView { get; private set; }
+		public DepthStencilView DepthStencilView { get; private set; }
+
 		private readonly CullMode CullMode = CullMode.Back;
 
 		public D3DManager(Form renderForm)
@@ -100,7 +101,6 @@ namespace SubdivisionRenderer
 			SwapChain.ResizeBuffers(3, 0, 0, Format.R8G8B8A8_UNorm, SwapChainFlags.AllowModeSwitch);
 			CreateRenderTargets(width, height);
 			Device.ImmediateContext.OutputMerger.SetTargets(DepthStencilView, RenderTargetView);
-			Camera.Aspect = (float) width / height;
 		}
 
 		public void Dispose()

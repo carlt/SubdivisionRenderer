@@ -3,14 +3,11 @@ using System.Linq;
 
 namespace SubdivisionRenderer
 {
-	public struct AccPatch
+	public class AccPatch
 	{
-		private const int MaxPoints = 32;
-		private const int MaxValence = 16;
-
-		public List<Point> Points;
-		public List<int> Valences;
-		public List<int> Prefixes;
+		public List<Point> Points { get; set; }
+		public List<int> Valences { get; set; }
+		public List<int> Prefixes { get; set; }
 
 		public static bool operator ==(AccPatch a, AccPatch b)
 		{

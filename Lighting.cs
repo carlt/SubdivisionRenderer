@@ -1,39 +1,33 @@
-﻿using System.Drawing;
-using System.Runtime.InteropServices;
+﻿using System.Collections.Generic;
+using System.Drawing;
 using SlimDX;
 
 namespace SubdivisionRenderer
 {
-	static class Lighting
+	class Lighting
 	{
-		public static PhongParameters PhongParameters =
-			new PhongParameters {
+		public PhongParameters PhongParameters { get; set; }
+		public Vector4 AmbientLightColor { get; set; }
+		public List<Light> Lights { get; set; }
+
+		public Lighting()
+		{
+			AmbientLightColor = Color.White.ToVector();
+			
+			Lights = 
+				new List<Light> {
+					new Light { Color = Color.White.ToVector(), Direction = Vector3.Normalize(new Vector3(1.5f, 1.5f, 2f)) },
+					new Light { Color = Color.Gray.ToVector(), Direction = Vector3.Normalize(new Vector3(-1.5f, -1.5f, 2f)) }
+				};
+
+			PhongParameters = 
+				new PhongParameters {
 					Ambient = 0.1f,
 					Diffuse = 0.5f,
 					Specular = 0.5f,
-					Shininess = 30f
+					Shininess = 40f
 				};
 
-		public static Vector4 AmbientLightColor = Color.White.ToVector();
-
-		public static Vector4 DirectionalLightColor = Color.White.ToVector();
-		public static Vector3 DirectionalLightDirection = Vector3.Normalize(new Vector3(1.5f, 1.5f, 2f));
-		
-		public static Vector4 DirectionalLight2Color = Color.Gray.ToVector();
-		public static Vector3 DirectionalLight2Direction = Vector3.Normalize(new Vector3(-1.5f, -1.5f, 2f));
-	}
-
-	[StructLayout(LayoutKind.Sequential)]
-	struct PhongParameters
-	{
-		public float Ambient;
-		public float Specular;
-		public float Diffuse;
-		public float Shininess;
-
-		public Vector4 AsVector()
-		{
-			return new Vector4(Ambient, Specular, Diffuse, Shininess);
 		}
 	}
 }

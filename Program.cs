@@ -14,61 +14,64 @@ namespace SubdivisionRenderer
 {
 	static class Program
 	{
-		private static ModelRenderer _modelRenderer;
-		private static D3DManager _dxManager;
+		private static readonly D3DManager DxManager;
+		private static readonly RenderForm RenderForm;
+		private static readonly ModelRenderer ModelRenderer;
+
 		private static readonly Queue<Double> FrameCounter = new Queue<double>();
 		private static readonly List<string> Models = new List<string>();
 		private static int _currentModelIndex;
 
-		private static RenderParameters _renderParameters = RenderParameters.Default();
+		public static float FrameRate;
 
-		[STAThread]
-		static void Main()
+		static Program()
 		{
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
 
-			var renderForm = new RenderForm("Subdivision");
-			_dxManager = new D3DManager(renderForm);
-
-			renderForm.FormClosing += OnExit;
-			renderForm.KeyDown += HandleKeyboardStart;
-			renderForm.KeyUp += HandleKeyboardEnd;
-			renderForm.UserResized += FormResized;
-			renderForm.MouseDown += HandleMouseDown;
-			renderForm.MouseUp += HandleMouseUp;
-			renderForm.MouseMove += HandleMouseMove;
-			renderForm.MouseWheel += HandleMouseWheel;
+			RenderForm = new RenderForm("Subdivision");
+			DxManager = new D3DManager(RenderForm);
 
 			FindModels();
 
-			_modelRenderer = new ModelRenderer(_dxManager.Device, new Model(Models.First()));
+			ModelRenderer = new ModelRenderer(DxManager.Device, new Model(Models.First()));
 
+			RenderForm.FormClosing += OnExit;
+			RenderForm.KeyDown += HandleKeyboardStart;
+			RenderForm.KeyUp += HandleKeyboardEnd;
+			RenderForm.UserResized += FormResized;
+			RenderForm.MouseDown += HandleMouseDown;
+			RenderForm.MouseUp += HandleMouseUp;
+			RenderForm.MouseMove += HandleMouseMove;
+			RenderForm.MouseWheel += HandleMouseWheel;
+		}
+
+		[STAThread]
+		public static void Main()
+		{
 			var stopwatch = Stopwatch.StartNew();
 			var timeSinceTitleUpdate = 1f;
-			MessagePump.Run(renderForm, () => {
+			MessagePump.Run(RenderForm, () => {
 
-				_dxManager.Device.ImmediateContext.ClearRenderTargetView(_dxManager.RenderTargetView, Color.Cornsilk);
-				_dxManager.Device.ImmediateContext.ClearDepthStencilView(_dxManager.DepthStencilView, DepthStencilClearFlags.Depth, 1f, 0);
+				DxManager.Device.ImmediateContext.ClearRenderTargetView(DxManager.RenderTargetView, Color.White);
+				DxManager.Device.ImmediateContext.ClearDepthStencilView(DxManager.DepthStencilView, DepthStencilClearFlags.Depth, 1f, 0);
 
-				_modelRenderer.Render(_renderParameters);
+				ModelRenderer.Render();
 
-				_dxManager.SwapChain.Present(0, PresentFlags.None);
-
-				_renderParameters.TicksLastFrame = stopwatch.ElapsedTicks;
+				DxManager.SwapChain.Present(0, PresentFlags.None);
 				
 				if (FrameCounter.Count > 50)
 					FrameCounter.Dequeue();
-				FrameCounter.Enqueue(_renderParameters.TicksLastFrame);
+				FrameCounter.Enqueue(stopwatch.ElapsedTicks);
 
-				_renderParameters.FrameRate = 1f / (float)(FrameCounter.Average() / Stopwatch.Frequency);
+				FrameRate = 1f / (float)(FrameCounter.Average() / Stopwatch.Frequency);
 
 				if (timeSinceTitleUpdate > 0.5f)
 				{
-					UpdateTitle(renderForm);
+					UpdateTitle(RenderForm);
 					timeSinceTitleUpdate = 0f;
 				}
-				timeSinceTitleUpdate += 1f / _renderParameters.FrameRate;
+				timeSinceTitleUpdate += 1f / FrameRate;
 
 				stopwatch = Stopwatch.StartNew();
 			});
@@ -77,13 +80,12 @@ namespace SubdivisionRenderer
 		private static void UpdateTitle(Control renderForm)
 		{
 			renderForm.Text =
-				String.Format("{0} fps | Subdivion: {1} | TessellationFactor: {2} | Textures: {3} | Wireframe: {4} | Faces: {5}",
-				_renderParameters.FrameRate.ToString("F0", CultureInfo.InvariantCulture),
-				_modelRenderer.GetSubdivisionMode(),
-				_renderParameters.TessellationFactor.ToString("0.0", CultureInfo.InvariantCulture),
-				_renderParameters.Textured ? "ON" : "OFF",
-				_renderParameters.WireFrame ? "ON" : "OFF",
-				_modelRenderer.GetFaceCount() * Math.Floor(_renderParameters.TessellationFactor) * Math.Floor(_renderParameters.TessellationFactor));
+				String.Format("{0} fps | Subdivion: {1} | TessellationFactor: {2} | Textures: {3} | Wireframe: {4}",
+				              FrameRate.ToString("F0", CultureInfo.InvariantCulture),
+				              ModelRenderer.RenderParameters.ShaderMode,
+				              ModelRenderer.RenderParameters.TessellationFactor.ToString("0.0", CultureInfo.InvariantCulture),
+							  ModelRenderer.RenderParameters.Textured ? "ON" : "OFF",
+							  ModelRenderer.RenderParameters.WireFrame ? "ON" : "OFF");
 		}
 
 		private static void FindModels()
@@ -93,15 +95,11 @@ namespace SubdivisionRenderer
 				Models.Add(fileName);
 		}
 
-		public static float GetFrameRate()
-		{
-			return _renderParameters.FrameRate;
-		}
-
 		private static void FormResized(Object sender, EventArgs e)
 		{
 			var form = sender as RenderForm;
-			_dxManager.ResizeRenderTargets(form.ClientSize.Width, form.ClientSize.Height);
+			DxManager.ResizeRenderTargets(form.ClientSize.Width, form.ClientSize.Height);
+			ModelRenderer.RenderParameters.Camera.Aspect = (float)form.ClientSize.Width / form.ClientSize.Height;
 		}
 
 		private static void HandleKeyboardStart(Object sender, KeyEventArgs e)
@@ -109,114 +107,87 @@ namespace SubdivisionRenderer
 			switch (e.KeyCode)
 			{
 				case Controls.Shader1:
-					_modelRenderer.ChangeShader(ShaderMode.Bilinear);
+					ModelRenderer.RenderParameters.ShaderMode = ShaderMode.Bilinear;
 					break;
 				case Controls.Shader2:
-					_modelRenderer.ChangeShader(ShaderMode.Phong);
+					ModelRenderer.RenderParameters.ShaderMode = ShaderMode.Phong;
 					break;
 				case Controls.Shader3:
-					_modelRenderer.ChangeShader(ShaderMode.PnQuads);
+					ModelRenderer.RenderParameters.ShaderMode = ShaderMode.PnQuads;
 					break;
 				case Controls.Shader4:
-					_modelRenderer.ChangeShader(ShaderMode.Acc);
+					ModelRenderer.RenderParameters.ShaderMode = ShaderMode.Acc;
 					break;
 				case Controls.Wireframe:
-					_renderParameters.WireFrame = !_renderParameters.WireFrame;
-					_dxManager.ChangeWireframe(_renderParameters.WireFrame);
+					ModelRenderer.RenderParameters.WireFrame = !ModelRenderer.RenderParameters.WireFrame;
+					DxManager.ChangeWireframe(ModelRenderer.RenderParameters.WireFrame);
 					break;
 				case Controls.ShadingToggle:
-					_renderParameters.FlatShading = !_renderParameters.FlatShading;
+					ModelRenderer.RenderParameters.FlatShading = !ModelRenderer.RenderParameters.FlatShading;
 					break;
 				case Controls.DisplayNormals:
-					_renderParameters.DisplayNormals = !_renderParameters.DisplayNormals;
+					ModelRenderer.RenderParameters.DisplayNormals = !ModelRenderer.RenderParameters.DisplayNormals;
 					break;
 				case Controls.TessFactorUp:
-					_renderParameters.TessellationFactor =
-						_renderParameters.TessellationFactor + _renderParameters.TessellationStep > 64f
-							? _renderParameters.TessellationFactor
-							: _renderParameters.TessellationFactor + _renderParameters.TessellationStep;
+					ModelRenderer.RenderParameters.TessellationFactor =
+						ModelRenderer.RenderParameters.TessellationFactor + ModelRenderer.RenderParameters.TessellationStep > 64f
+							? ModelRenderer.RenderParameters.TessellationFactor
+							: ModelRenderer.RenderParameters.TessellationFactor + ModelRenderer.RenderParameters.TessellationStep;
 					break;
 				case Controls.TessFactorDown:
-					_renderParameters.TessellationFactor =
-						_renderParameters.TessellationFactor - _renderParameters.TessellationStep < 1f
-							? _renderParameters.TessellationFactor
-							: _renderParameters.TessellationFactor - _renderParameters.TessellationStep;
+					ModelRenderer.RenderParameters.TessellationFactor =
+						ModelRenderer.RenderParameters.TessellationFactor - ModelRenderer.RenderParameters.TessellationStep < 1f
+							? ModelRenderer.RenderParameters.TessellationFactor
+							: ModelRenderer.RenderParameters.TessellationFactor - ModelRenderer.RenderParameters.TessellationStep;
 					break;
 				case Controls.TextureToggle:
-					_renderParameters.Textured = !_renderParameters.Textured;
+					ModelRenderer.RenderParameters.Textured = !ModelRenderer.RenderParameters.Textured;
 					break;
 				case Controls.ChangeModel:
 					_currentModelIndex = (_currentModelIndex + 1) % Models.Count;
-					_modelRenderer.Model = new Model(Models[_currentModelIndex]);
+					ModelRenderer.Model = new Model(Models[_currentModelIndex]);
 					break;
 				case Controls.Reset:
-					Camera.Reset();
+					ModelRenderer.RenderParameters.Camera.Reset();
 					break;
 				default:
-					Camera.HandleKeyboardStart(e);
+					ModelRenderer.RenderParameters.Camera.HandleKeyboardStart(e);
 					break;
 			}
 		}
 
 		private static void HandleKeyboardEnd(Object sender, KeyEventArgs e)
 		{
-			Camera.HandleKeyboardEnd(e);
+			ModelRenderer.RenderParameters.Camera.HandleKeyboardEnd(e);
 		}
 
 		private static void HandleMouseDown(object sender, MouseEventArgs e)
 		{
-			Camera.HandleMouseDown(e);
+			ModelRenderer.RenderParameters.Camera.HandleMouseDown(e);
 		}
 
 		private static void HandleMouseUp(object sender, MouseEventArgs e)
 		{
-			Camera.HandleMouseUp(e);
+			ModelRenderer.RenderParameters.Camera.HandleMouseUp(e);
 		}
 
 		private static void HandleMouseMove(object sender, MouseEventArgs e)
 		{
-			Camera.HandleMouseMove(e);
+			ModelRenderer.RenderParameters.Camera.HandleMouseMove(e);
 		}
 
 		private static void HandleMouseWheel(object sender, MouseEventArgs e)
 		{
-			Camera.HandleMouseWheel(e);
+			ModelRenderer.RenderParameters.Camera.HandleMouseWheel(e);
 		}
 
 		private static void OnExit(Object sender, FormClosingEventArgs e)
 		{
-			if (_dxManager != null)
-				_dxManager.Dispose();
+			if (DxManager != null)
+				DxManager.Dispose();
 
-			if (_modelRenderer != null)
-				_modelRenderer.Dispose();
-		}
-	}
-
-	struct RenderParameters
-	{
-		public bool WireFrame;
-		public float TessellationFactor;
-		public float TessellationStep;
-		public bool Textured;
-		public bool FlatShading;
-		public bool DisplayNormals;
-		public long TicksLastFrame;
-		public float FrameRate;
-
-		public static RenderParameters Default()
-		{
-			return new RenderParameters
-			{
-				WireFrame = false,
-				TessellationFactor = 1f,
-				TessellationStep = 0.25f,
-				Textured = false,
-				FlatShading = false,
-				DisplayNormals = false,
-				TicksLastFrame = 200,
-				FrameRate = 100f
-			};
+			if (ModelRenderer != null)
+				ModelRenderer.Dispose();
 		}
 	}
 }

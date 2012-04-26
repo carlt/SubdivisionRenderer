@@ -4,55 +4,77 @@ using SlimDX;
 
 namespace SubdivisionRenderer
 {
-	static class Camera
+	class Camera
 	{
 		// World
-		public static Vector3 Position;
-		public static Vector3 Rotation;
+		public Vector3 Position;
+		public Vector3 Rotation;
 
 		// View
-		public static Vector3 Eye = new Vector3(0f, 0f, -1.5f);
-		public static Vector3 Target = Vector3.Zero;
-		public static Vector3 Up = new Vector3(0f, 1f, 0f);
+		public Vector3 Eye { get; set; }
+		public Vector3 Target { get; set; }
+		public Vector3 Up { get; set; }
 
 		// Projection
-		public static float Fov = (float) Math.PI * 0.4f;
-		public static float Aspect = (float) 800 / 600;
+		public float Fov { get; set; }
+		public float Aspect { get; set; }
 
 		// Movement
 		private const float BaseMoveStep = 3f;
-		private static float MoveStep { get { return _speed ? BaseMoveStep * 3f : BaseMoveStep; } }
+		private float MoveStep { get { return _speed ? BaseMoveStep * 3f : BaseMoveStep; } }
 
 		// Rotation
 		private const float BaseRotateStep = 1f;
-		private static float RotateStep { get { return _speed ? BaseRotateStep * 3f : BaseRotateStep; } }
+		private float RotateStep { get { return _speed ? BaseRotateStep * 3f : BaseRotateStep; } }
 		
 		// Indicators
-		private static bool _speed;
-		private static readonly bool[] Moving = new bool[10];
+		private bool _speed;
+		private readonly bool[] _moving = new bool[10];
 
 		// Mouse
-		private static int _mouseX;
-		private static int _mouseY;
-		private static bool _mousePressed;
+		private int _mouseX;
+		private int _mouseY;
+		private bool _mousePressed;
 
-		public static Matrix World()
+		public Camera()
 		{
-			var secPerFrame = 1f / Program.GetFrameRate();
+			Fov = (float) Math.PI * 0.4f;
+			Aspect = (float) 800 / 600;
 
-			if (Moving[(int) Mode.RotatePosY])
+			Reset();
+		}
+
+		public void Reset()
+		{
+			Position = new Vector3();
+			Rotation = new Vector3();
+
+			Eye = new Vector3(0f, 0f, -2f);
+			Target = Vector3.Zero;
+			Up = new Vector3(0f, 1f, 0f);
+
+			/*Eye = new Vector3(-0.33f, 0f, -3.16f);
+			Target = new Vector3(-0.33f, 0, -1.16f);
+			Rotation = new Vector3(-0.65f, 0f, 0f);*/
+		}
+
+		public Matrix World()
+		{
+			var secPerFrame = 1f / Program.FrameRate;
+
+			if (_moving[(int) Mode.RotatePosY])
 			{
 				Rotate(new Vector3(0f, RotateStep * secPerFrame, 0f));
 			}
-			if (Moving[(int) Mode.RotateNegY])
+			if (_moving[(int) Mode.RotateNegY])
 			{
 				Rotate(new Vector3(0f, -RotateStep * secPerFrame, 0f));
 			}
-			if (Moving[(int) Mode.RotatePosX])
+			if (_moving[(int) Mode.RotatePosX])
 			{
 				Rotate(new Vector3(RotateStep * secPerFrame, 0f, 0f));
 			}
-			if (Moving[(int) Mode.RotateNegX])
+			if (_moving[(int) Mode.RotateNegX])
 			{
 				Rotate(new Vector3(-RotateStep * secPerFrame, 0f, 0f));
 			}
@@ -60,38 +82,38 @@ namespace SubdivisionRenderer
 			return Matrix.Translation(Position) * Matrix.RotationYawPitchRoll(Rotation.X, Rotation.Y, Rotation.Z);
 		}
 
-		private static Matrix View()
+		private Matrix View()
 		{
 			var direction = Vector3.Normalize(Target - Eye);
 			var strafe = Vector3.Normalize(Vector3.Cross(direction, Up));
-			var secPerFrame = 1f / Program.GetFrameRate();
+			var secPerFrame = 1f / Program.FrameRate;
 
-			if (Moving[(int) Mode.MoveForward])
+			if (_moving[(int) Mode.MoveForward])
 			{
 				Target += direction * MoveStep * secPerFrame;
 				Eye += direction * MoveStep * secPerFrame;
 			}
-			if (Moving[(int) Mode.MoveBackward])
+			if (_moving[(int) Mode.MoveBackward])
 			{
 				Target -= direction * MoveStep * secPerFrame;
 				Eye -= direction * MoveStep * secPerFrame;
 			}
-			if (Moving[(int) Mode.MoveLeft])
+			if (_moving[(int) Mode.MoveLeft])
 			{
 				Target += strafe * MoveStep * secPerFrame;
 				Eye += strafe * MoveStep * secPerFrame;
 			}
-			if (Moving[(int) Mode.MoveRight])
+			if (_moving[(int) Mode.MoveRight])
 			{
 				Target -= strafe * MoveStep * secPerFrame;
 				Eye -= strafe * MoveStep * secPerFrame;
 			}
-			if (Moving[(int) Mode.MoveUp])
+			if (_moving[(int) Mode.MoveUp])
 			{
 				Target += Up * MoveStep * secPerFrame;
 				Eye += Up * MoveStep * secPerFrame;
 			}
-			if (Moving[(int) Mode.MoveDown])
+			if (_moving[(int) Mode.MoveDown])
 			{
 				Target -= Up * MoveStep * secPerFrame;
 				Eye -= Up * MoveStep * secPerFrame;
@@ -100,22 +122,12 @@ namespace SubdivisionRenderer
 			return Matrix.LookAtLH(Eye, Target, Up);
 		}
 
-		public static Matrix WorldViewProjection()
+		public Matrix WorldViewProjection()
 		{
 			return World() * View() * Matrix.PerspectiveFovLH(Fov, Aspect, 0.1f, 100f);
 		}
 
-		public static void Reset()
-		{
-			Position = new Vector3();
-			Rotation = new Vector3();
-
-			Eye = new Vector3(0f, 0f, -1.5f);
-			Target = Vector3.Zero;
-			Up = new Vector3(0f, 1f, 0f);
-		}
-
-		private static void Rotate(Vector3 rotation)
+		private void Rotate(Vector3 rotation)
 		{
 			if (Rotation.X + rotation.X > Math.PI * 2)
 				Rotation.X += rotation.X - (float) Math.PI * 2;
@@ -139,7 +151,7 @@ namespace SubdivisionRenderer
 				Rotation.Z += rotation.Z;
 		}
 
-		public static void HandleKeyboardStart(KeyEventArgs e)
+		public void HandleKeyboardStart(KeyEventArgs e)
 		{
 			switch (e.KeyCode)
 			{
@@ -147,39 +159,39 @@ namespace SubdivisionRenderer
 					_speed = true;
 					break;
 				case Controls.MoveForward:
-					Moving[(int) Mode.MoveForward] = true;
+					_moving[(int) Mode.MoveForward] = true;
 					break;
 				case Controls.MoveBackward:
-					Moving[(int) Mode.MoveBackward] = true;
+					_moving[(int) Mode.MoveBackward] = true;
 					break;
 				case Controls.MoveLeft:
-					Moving[(int) Mode.MoveLeft] = true;
+					_moving[(int) Mode.MoveLeft] = true;
 					break;
 				case Controls.MoveRight:
-					Moving[(int) Mode.MoveRight] = true;
+					_moving[(int) Mode.MoveRight] = true;
 					break;
 				case Controls.MoveUp:
-					Moving[(int) Mode.MoveUp] = true;
+					_moving[(int) Mode.MoveUp] = true;
 					break;
 				case Controls.MoveDown:
-					Moving[(int) Mode.MoveDown] = true;
+					_moving[(int) Mode.MoveDown] = true;
 					break;
 				case Controls.RotatePosY:
-					Moving[(int) Mode.RotatePosY] = true;
+					_moving[(int) Mode.RotatePosY] = true;
 					break;
 				case Controls.RotateNegY:
-					Moving[(int) Mode.RotateNegY] = true;
+					_moving[(int) Mode.RotateNegY] = true;
 					break;
 				case Controls.RotatePosX:
-					Moving[(int) Mode.RotatePosX] = true;
+					_moving[(int) Mode.RotatePosX] = true;
 					break;
 				case Controls.RotateNegX:
-					Moving[(int) Mode.RotateNegX] = true;
+					_moving[(int) Mode.RotateNegX] = true;
 					break;
 			}
 		}
 
-		public static void HandleKeyboardEnd(KeyEventArgs e)
+		public void HandleKeyboardEnd(KeyEventArgs e)
 		{
 			switch (e.KeyCode)
 			{
@@ -187,51 +199,51 @@ namespace SubdivisionRenderer
 					_speed = false;
 					break;
 				case Controls.MoveForward:
-					Moving[(int) Mode.MoveForward] = false;
+					_moving[(int) Mode.MoveForward] = false;
 					break;
 				case Controls.MoveBackward:
-					Moving[(int) Mode.MoveBackward] = false;
+					_moving[(int) Mode.MoveBackward] = false;
 					break;
 				case Controls.MoveLeft:
-					Moving[(int) Mode.MoveLeft] = false;
+					_moving[(int) Mode.MoveLeft] = false;
 					break;
 				case Controls.MoveRight:
-					Moving[(int) Mode.MoveRight] = false;
+					_moving[(int) Mode.MoveRight] = false;
 					break;
 				case Controls.MoveUp:
-					Moving[(int) Mode.MoveUp] = false;
+					_moving[(int) Mode.MoveUp] = false;
 					break;
 				case Controls.MoveDown:
-					Moving[(int) Mode.MoveDown] = false;
+					_moving[(int) Mode.MoveDown] = false;
 					break;
 				case Controls.RotatePosY:
-					Moving[(int) Mode.RotatePosY] = false;
+					_moving[(int) Mode.RotatePosY] = false;
 					break;
 				case Controls.RotateNegY:
-					Moving[(int) Mode.RotateNegY] = false;
+					_moving[(int) Mode.RotateNegY] = false;
 					break;
 				case Controls.RotatePosX:
-					Moving[(int) Mode.RotatePosX] = false;
+					_moving[(int) Mode.RotatePosX] = false;
 					break;
 				case Controls.RotateNegX:
-					Moving[(int) Mode.RotateNegX] = false;
+					_moving[(int) Mode.RotateNegX] = false;
 					break;
 			}
 		}
 
-		public static void HandleMouseDown(MouseEventArgs e)
+		public void HandleMouseDown(MouseEventArgs e)
 		{
 			_mouseX = e.X;
 			_mouseY = e.Y;
 			_mousePressed = true;
 		}
 
-		public static void HandleMouseUp(MouseEventArgs e)
+		public void HandleMouseUp(MouseEventArgs e)
 		{
 			_mousePressed = false;
 		}
 
-		public static void HandleMouseMove(MouseEventArgs e)
+		public void HandleMouseMove(MouseEventArgs e)
 		{
 			if (!_mousePressed) return;
 
@@ -261,7 +273,7 @@ namespace SubdivisionRenderer
 			}
 		}
 
-		public static void HandleMouseWheel(MouseEventArgs e)
+		public void HandleMouseWheel(MouseEventArgs e)
 		{
 			var direction = Vector3.Normalize(Target - Eye);
 

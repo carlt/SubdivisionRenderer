@@ -266,7 +266,7 @@ DS_OUTPUT DS_PHONG(HS_CONSTANT_OUTPUT input, float2 UV : SV_DomainLocation, cons
 	float3 phongTopMid	= lerp(c0, c1, UV.x);
 	float3 phongBotMid	= lerp(c3, c2, UV.x);
 
-	float3 phongNew		= lerp(newVertex, lerp(phongTopMid, phongBotMid, UV.y), 0.75f /* alpha parameter, default = 3/4 */);
+	float3 phongNew		= lerp(newVertex, lerp(phongTopMid, phongBotMid, UV.y), 0.75 /* alpha parameter, default = 3/4 */);
 
 	output.posworld		= mul(phongNew, (float3x3) World);
 	output.position		= mul(float4(phongNew, 1), WorldViewProj);
@@ -423,9 +423,7 @@ DS_OUTPUT DS_PNQUAD(HSCONSTANT_PNQUAD_OUTPUT input, float2 uv : SV_DomainLocatio
 //----------------------------------------------------------------------------------------
 // ACC Tesselation Shaders
 //----------------------------------------------------------------------------------------
-float4 ComputeInteriorVertex( uint index, 
-							  uint Val[4], 
-							  const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip )
+float4 ComputeInteriorVertex(uint index, uint Val[4], const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip )
 {
 	switch( index )
 	{
@@ -442,9 +440,7 @@ float4 ComputeInteriorVertex( uint index,
 	return float4(0,0,0,0);
 }
 
-float3 ComputeInteriorNormal( uint index, 
-							  uint Val[4], 
-							  const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip )
+float3 ComputeInteriorNormal(uint index, uint Val[4], const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip)
 {
 	switch( index )
 	{
@@ -481,8 +477,8 @@ void ComputeCorner( uint index,
 					const in uint Val[4], 
 					const in uint Pref[4] )
 {
-	const float fOWt = 1;
-	const float fEWt = 4;
+	const float fOWt = 1; //Odd edge weight
+	const float fEWt = 4; //Even edge weight
 
 	// Figure out where to start the walk by using the previous corner's prefix value
 	uint PrefIm1 = 0;
@@ -550,10 +546,7 @@ void ComputeCorner( uint index,
 // neighborhood points.  However, we don't have to do the walk on this one since we
 // don't need all of the neighbor points attached to this vertex.
 //--------------------------------------------------------------------------------------
-float3 ComputeEdgeVertex( in uint index /* 0-7 */, 
-						  const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
-						  const in uint Val[4], 
-						  const in uint Pref[4] )
+float3 ComputeEdgeVertex(in uint index /* 0-7 */, const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, const in uint Val[4], const in uint Pref[4] )
 {
 	float val1 = 2 * Val[0] + 10;
 	float val2 = 2 * Val[1] + 10;
@@ -606,10 +599,7 @@ float3 ComputeEdgeVertex( in uint index /* 0-7 */,
 	return vRetVal;
 }
 
-float3 ComputeEdgeNormal( in uint index /* 0-7 */, 
-						  const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, 
-						  const in uint Val[4], 
-						  const in uint Pref[4] )
+float3 ComputeEdgeNormal(in uint index /* 0-7 */, const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, const in uint Val[4], const in uint Pref[4])
 {
 	float val1 = 2 * Val[0] + 10;
 	float val2 = 2 * Val[1] + 10;
@@ -656,7 +646,7 @@ float3 ComputeEdgeNormal( in uint index /* 0-7 */,
 	case 7:
 		vRetVal = (ip[0].normal + 4*ip[1].normal + Val[2]*2*ip[2].normal + 2*ip[3].normal +
 			   ip[Pref[1]-1].normal + 2*ip[Pref[1]].normal) / val11;
-		break;
+		break;	
 	}
 		
 	return vRetVal;
@@ -670,8 +660,7 @@ struct HS_CONSTANT_ACC_OUTPUT
 	float2 texcoords[4]		: TEXCOORD;
 };
 
-HS_CONSTANT_ACC_OUTPUT HSCONSTANT_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip,
-									   uint PatchID : SV_PrimitiveID )
+HS_CONSTANT_ACC_OUTPUT HSCONSTANT_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, uint PatchID : SV_PrimitiveID)
 {	
 	HS_CONSTANT_ACC_OUTPUT Output;
 	
@@ -689,25 +678,16 @@ HS_CONSTANT_ACC_OUTPUT HSCONSTANT_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip,
 }
 
 //--------------------------------------------------------------------------------------
-// HS for ACC.  This outputcontrolpoints(16) specifies that we will produce
+// HS for ACC. [outputcontrolpoints(16)] specifies that we will produce
 // 16 control points.  Therefore this function will be invoked 16x, one for each output
 // control point.
-//
-// !! PERFORMANCE NOTE: This hull shader is written for maximum readability, and its
-// performance is not expected to be optimal on D3D11 hardware.  The switch statement
-// below that determines the codepath for each patch control point generates sub-optimal
-// code for parallel execution on the GPU.  A future implementation of this hull shader
-// will combine the 16 codepaths and 3 variants (corner, edge, interior) into one shared
-// codepath; this change is expected to increase performance at the expense of readability.
 //--------------------------------------------------------------------------------------
 [domain("quad")]
 [partitioning(PARTITIONING)]
 [outputtopology("triangle_cw")]
 [outputcontrolpoints(16)]
 [patchconstantfunc("HSCONSTANT_ACC")]
-BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p, 
-							uint i : SV_OutputControlPointID,
-							uint PatchID : SV_PrimitiveID )
+BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p, uint i : SV_OutputControlPointID /* 0 - 15 */,	uint PatchID : SV_PrimitiveID)
 {
 	// Valences and prefixes are loaded from a buffer
 	uint Val[4];
@@ -720,8 +700,6 @@ BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p,
 	BEZIER_CONTROL_POINT Output;
 	Output.position = float3(0,0,0);
 	
-	// !! PERFORMANCE NOTE: As mentioned above, this switch statement generates
-	// inefficient code for the sake of readability.
 	switch( i )
 	{
 	// Interior vertices
@@ -803,9 +781,7 @@ BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p,
 }
 
 [domain("quad")]
-DS_OUTPUT DS_ACC( HS_CONSTANT_ACC_OUTPUT input, 
-						float2 UV : SV_DomainLocation,
-						const OutputPatch<BEZIER_CONTROL_POINT, 16> bezpatch )
+DS_OUTPUT DS_ACC(HS_CONSTANT_ACC_OUTPUT input, float2 UV : SV_DomainLocation, const OutputPatch<BEZIER_CONTROL_POINT, 16> bezpatch)
 {
 	float4 BasisU = BernsteinBasisBiCubic( UV.x );
 	float4 BasisV = BernsteinBasisBiCubic( UV.y );
