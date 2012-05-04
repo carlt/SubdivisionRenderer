@@ -2,7 +2,7 @@
 #define MOD4(x) ((x)&3)
 
 // fractional_odd, fractional_even, integer, pow2
-#define PARTITIONING "fractional_odd"
+#define PARTITIONING "integer"
 
 //----------------------------------------------------------------------------------------
 // Standard Variables
@@ -13,7 +13,7 @@ float		TessFactor			: TessellationFactor;
 Texture2D	Texture				: TextureMap;
 bool		EnableTexture		: TexturesEnabled;
 bool		FlatShading			: FlatShadingEnabled;
-bool		WireFrame			: WireFrameEnabled;
+bool		Normals				: DisplayNormalsEnabled;
 
 //----------------------------------------------------------------------------------------
 // Lighting Variables
@@ -241,9 +241,9 @@ DS_OUTPUT DS_FLAT(HS_CONSTANT_OUTPUT input, float2 UV : SV_DomainLocation, const
 //----------------------------------------------------------------------------------------
 // Phong Tesselation Shaders
 //----------------------------------------------------------------------------------------
-float3 PhongOperator(float3 p, float3 c, float3 n)
+float3 PhongOperator(float3 q, float3 p, float3 n)
 {
-	return p - dot(p - c, n) * n;
+	return q - dot(q - p, n) * n;
 }
 
 [domain("quad")]
@@ -384,7 +384,7 @@ HSCONSTANT_PNQUAD_OUTPUT HSCONSTANT_PNQUAD(InputPatch<VS_OUTPUT, 4> inputPatch, 
 }
 
 [domain("quad")]
-DS_OUTPUT DS_PNQUAD(HSCONSTANT_PNQUAD_OUTPUT input, float2 uv : SV_DomainLocation, OutputPatch<HS_OUTPUT, 4> inputPatch)
+DS_OUTPUT DS_PNQUAD(HSCONSTANT_PNQUAD_OUTPUT input, float2 uv : SV_DomainLocation, const OutputPatch<HS_OUTPUT, 4> inputPatch)
 {
 	DS_OUTPUT output = (DS_OUTPUT) 0;
 
@@ -783,77 +783,52 @@ BEZIER_CONTROL_POINT HS_ACC(InputPatch<VS_OUTPUT, MAX_ACC_POINTS> p, uint i : SV
 [domain("quad")]
 DS_OUTPUT DS_ACC(HS_CONSTANT_ACC_OUTPUT input, float2 UV : SV_DomainLocation, const OutputPatch<BEZIER_CONTROL_POINT, 16> bezpatch)
 {
+	DS_OUTPUT output;
+
 	float4 BasisU = BernsteinBasisBiCubic( UV.x );
 	float4 BasisV = BernsteinBasisBiCubic( UV.y );
 	
-	float4 WorldPos = EvaluateBezierBiCubic( bezpatch[0].position,  bezpatch[1].position,  bezpatch[2].position,  bezpatch[3].position,
+	output.position = EvaluateBezierBiCubic( bezpatch[0].position,  bezpatch[1].position,  bezpatch[2].position,  bezpatch[3].position,
 											 bezpatch[4].position,  bezpatch[5].position,  bezpatch[6].position,  bezpatch[7].position,
 											 bezpatch[8].position,  bezpatch[9].position,  bezpatch[10].position, bezpatch[11].position,
 											 bezpatch[12].position, bezpatch[13].position, bezpatch[14].position, bezpatch[15].position,
 											 BasisU,				BasisV);
 
-	float3 Normal	= EvaluateBezierBiCubic( bezpatch[0].normal,  bezpatch[1].normal,  bezpatch[2].normal,  bezpatch[3].normal,
+	output.normal	= EvaluateBezierBiCubic( bezpatch[0].normal,  bezpatch[1].normal,  bezpatch[2].normal,  bezpatch[3].normal,
 											 bezpatch[4].normal,  bezpatch[5].normal,  bezpatch[6].normal,  bezpatch[7].normal,
 											 bezpatch[8].normal,  bezpatch[9].normal,  bezpatch[10].normal, bezpatch[11].normal,
 											 bezpatch[12].normal, bezpatch[13].normal, bezpatch[14].normal, bezpatch[15].normal,
 											 BasisU,			  BasisV).xyz;
 
-	DS_OUTPUT Output;
-	Output.normal = Normal;
+	float2 bottom	= lerp(input.texcoords[0], input.texcoords[1], UV.x);
+	float2 top		= lerp(input.texcoords[3], input.texcoords[2], UV.x);
+	output.texcoord = lerp(bottom, top, UV.y);
 
-	// bilerp the texture coordinates    
-	float2 tex0 = input.texcoords[0];
-	float2 tex1 = input.texcoords[1];
-	float2 tex2 = input.texcoords[2];
-	float2 tex3 = input.texcoords[3];
-		
-	float2 bottom = lerp( tex0, tex1, UV.x );
-	float2 top = lerp( tex3, tex2, UV.x );
-	float2 TexUV = lerp( bottom, top, UV.y );
-	Output.texcoord = TexUV;
+	output.normal   = mul(output.normal, (float3x3) World);
+	output.posworld = mul(output.position.xyz, (float3x3) World);
 	
-	Output.normal   = mul(Output.normal, (float3x3) World);
-	Output.position = mul(WorldPos, WorldViewProj );
-	Output.posworld = mul(WorldPos.xyz, (float3x3) World);
+	output.position = mul(output.position, WorldViewProj);
 	
-	return Output;    
+	return output;    
 }
-
-[maxvertexcount(2)]
-void GS_NORMALS(point DS_OUTPUT vertex[1], inout LineStream<DS_OUTPUT> lineStream)
-{
-	DS_OUTPUT output;
-
-	output.position = vertex[0].position;
-	output.normal = vertex[0].normal;
-	output.texcoord = vertex[0].texcoord;
-	output.posworld = vertex[0].posworld;
-	
-	lineStream.Append(output);
-	
-	output.position = output.position + (float4(output.normal, 1) * 0.1f);
-
-	lineStream.Append(output);
-
-} 
 
 //----------------------------------------------------------------------------------------
 // Pixel Shaders & Techniques
 //----------------------------------------------------------------------------------------
 float4 PS(DS_OUTPUT input) : SV_Target
 {
-	if (WireFrame) return float4(0,0,0,0);
-
 	if (FlatShading)
 	{
 		float3 xdir = ddx(input.posworld);
 		float3 ydir = ddy(input.posworld);
 		input.normal = normalize(cross(xdir, ydir));
-	} 
+	}
 	else 
 	{
-		input.normal = normalize(input.normal);
+		input.normal = normalize(input.normal);	
 	}
+
+	if (Normals) return float4(input.normal, 1) * -1;
 
 	if (EnableTexture)
 		return PhongLighting(input.normal, input.posworld) * Texture.Sample(stateLinear, input.texcoord);
@@ -861,9 +836,9 @@ float4 PS(DS_OUTPUT input) : SV_Target
 	return PhongLighting(input.normal, input.posworld);
 }
 
-float4 PS_NORMALS(DS_OUTPUT input) : SV_Target
+float4 PS_WIRES(DS_OUTPUT input) : SV_Target
 {
-	return float4(input.normal, 1) * -1;
+	return float4(0, 0, 0, 0);
 }
 
 technique11 RenderFlat
@@ -879,12 +854,12 @@ technique11 RenderFlat
 	}
 	pass P1
 	{
-		SetGeometryShader(CompileShader(gs_5_0, GS_NORMALS()));
+		SetGeometryShader(0);
 
 		SetVertexShader	(CompileShader(vs_5_0, VS()));
 		SetHullShader	(CompileShader(hs_5_0, HS_FLAT()));
 		SetDomainShader	(CompileShader(ds_5_0, DS_FLAT()));
-		SetPixelShader	(CompileShader(ps_5_0, PS_NORMALS()));
+		SetPixelShader	(CompileShader(ps_5_0, PS_WIRES()));
 	}
 }
 
@@ -901,12 +876,12 @@ technique11 RenderPhongTess
 	}
 	pass P1
 	{
-		SetGeometryShader(CompileShader(gs_5_0, GS_NORMALS()));
+		SetGeometryShader(0);
 
 		SetVertexShader	(CompileShader(vs_5_0, VS()));
 		SetHullShader	(CompileShader(hs_5_0, HS_FLAT()));
 		SetDomainShader	(CompileShader(ds_5_0, DS_PHONG()));
-		SetPixelShader	(CompileShader(ps_5_0, PS_NORMALS()));
+		SetPixelShader	(CompileShader(ps_5_0, PS_WIRES()));
 	}
 }
 
@@ -923,12 +898,12 @@ technique11 RenderPNQuads
 	}
 	pass P1
 	{
-		SetGeometryShader(CompileShader(gs_5_0, GS_NORMALS()));
+		SetGeometryShader(0);
 
 		SetVertexShader	(CompileShader(vs_5_0, VS()));
 		SetHullShader	(CompileShader(hs_5_0, HS_PNQUAD()));
 		SetDomainShader	(CompileShader(ds_5_0, DS_PNQUAD()));
-		SetPixelShader	(CompileShader(ps_5_0, PS_NORMALS()));
+		SetPixelShader	(CompileShader(ps_5_0, PS_WIRES()));
 	}
 }
 
@@ -945,11 +920,11 @@ technique11 RenderACC
 	}
 	pass P1
 	{
-		SetGeometryShader(CompileShader(gs_5_0, GS_NORMALS()));
+		SetGeometryShader(0);
 
 		SetVertexShader	(CompileShader(vs_5_0, VS()));
 		SetHullShader	(CompileShader(hs_5_0, HS_ACC()));
 		SetDomainShader	(CompileShader(ds_5_0, DS_ACC()));
-		SetPixelShader	(CompileShader(ps_5_0, PS_NORMALS()));
+		SetPixelShader	(CompileShader(ps_5_0, PS_WIRES()));
 	}
 }

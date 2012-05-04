@@ -17,10 +17,5 @@
 		{
 			return !(x == y);
 		}
-
-		public bool SamePosition(Point x)
-		{
-			return x.PositionIndex == PositionIndex;
-		}
 	}
 }

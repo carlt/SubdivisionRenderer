@@ -7,17 +7,17 @@ namespace SubdivisionRenderer
 	class Lighting
 	{
 		public PhongParameters PhongParameters { get; set; }
-		public Vector4 AmbientLightColor { get; set; }
+		public Color AmbientLightColor { get; set; }
 		public List<Light> Lights { get; set; }
 
 		public Lighting()
 		{
-			AmbientLightColor = Color.White.ToVector();
+			AmbientLightColor = Color.White;
 			
 			Lights = 
 				new List<Light> {
-					new Light { Color = Color.White.ToVector(), Direction = Vector3.Normalize(new Vector3(1.5f, 1.5f, 2f)) },
-					new Light { Color = Color.Gray.ToVector(), Direction = Vector3.Normalize(new Vector3(-1.5f, -1.5f, 2f)) }
+					new Light { Color = Color.White, Direction = Vector3.Normalize(new Vector3(1.5f, 1.5f, 2f)) },
+					new Light { Color = Color.Gray, Direction = Vector3.Normalize(new Vector3(-1.5f, -1.5f, 2f)) }
 				};
 
 			PhongParameters = 
@@ -27,7 +27,6 @@ namespace SubdivisionRenderer
 					Specular = 0.5f,
 					Shininess = 40f
 				};
-
 		}
 	}
 }

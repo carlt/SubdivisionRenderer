@@ -16,8 +16,6 @@ namespace SubdivisionRenderer
 		public RenderTargetView RenderTargetView { get; private set; }
 		public DepthStencilView DepthStencilView { get; private set; }
 
-		private readonly CullMode CullMode = CullMode.Back;
-
 		public D3DManager(Form renderForm)
 		{
 			if (renderForm == null) throw new ArgumentNullException("renderForm");
@@ -42,7 +40,7 @@ namespace SubdivisionRenderer
 
 			Device.ImmediateContext.Rasterizer.State = RasterizerState.FromDescription(Device,
 				new RasterizerStateDescription {
-					CullMode = CullMode,
+					CullMode = CullMode.Back,
 					FillMode = FillMode.Solid,
 					IsMultisampleEnabled = true
 				});
@@ -81,16 +79,6 @@ namespace SubdivisionRenderer
 
 			backBuffer.Dispose();
 			depthBuffer.Dispose();
-		}
-
-		public void ChangeWireframe(bool enabled)
-		{
-			Device.ImmediateContext.Rasterizer.State = RasterizerState.FromDescription(Device,
-				new RasterizerStateDescription {
-					CullMode = CullMode,
-					FillMode = enabled ? FillMode.Wireframe : FillMode.Solid,
-					IsMultisampleEnabled = true
-				});
 		}
 
 		public void ResizeRenderTargets(int width, int height)

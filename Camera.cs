@@ -38,9 +38,7 @@ namespace SubdivisionRenderer
 
 		public Camera()
 		{
-			Fov = (float) Math.PI * 0.4f;
-			Aspect = (float) 800 / 600;
-
+			Fov = (float) Math.PI * 0.5f;
 			Reset();
 		}
 
@@ -52,10 +50,6 @@ namespace SubdivisionRenderer
 			Eye = new Vector3(0f, 0f, -2f);
 			Target = Vector3.Zero;
 			Up = new Vector3(0f, 1f, 0f);
-
-			/*Eye = new Vector3(-0.33f, 0f, -3.16f);
-			Target = new Vector3(-0.33f, 0, -1.16f);
-			Rotation = new Vector3(-0.65f, 0f, 0f);*/
 		}
 
 		public Matrix World()
@@ -78,8 +72,8 @@ namespace SubdivisionRenderer
 			{
 				Rotate(new Vector3(-RotateStep * secPerFrame, 0f, 0f));
 			}
-			
-			return Matrix.Translation(Position) * Matrix.RotationYawPitchRoll(Rotation.X, Rotation.Y, Rotation.Z);
+
+			return Matrix.RotationYawPitchRoll(Rotation.X, Rotation.Y, Rotation.Z) * Matrix.Translation(Position);
 		}
 
 		private Matrix View()
@@ -247,30 +241,31 @@ namespace SubdivisionRenderer
 		{
 			if (!_mousePressed) return;
 
-			int deltaX;
-			int deltaY;
+			var deltaX = e.X - _mouseX;
+			var deltaY = e.Y - _mouseY;
+
 			switch (e.Button)
 			{
 				case MouseButtons.Left:
-					deltaX = e.X - _mouseX;
-					deltaY = e.Y - _mouseY;
+					var direction = Vector3.Normalize(Target - Eye);
+					var strafe = Vector3.Normalize(Vector3.Cross(direction, Up));
 			
-					Rotate(new Vector3(deltaX / -360f, deltaY / -360f, 0f));
+					var rotationAxis = Matrix.RotationAxis(strafe, deltaY / -180f);
+					var rotationZ = Matrix.RotationZ(deltaX / -180f);
 
-					_mouseX = e.X;
-					_mouseY = e.Y;
+					direction = Vector3.TransformCoordinate(direction, rotationAxis * rotationZ);
+					Up = Vector3.TransformCoordinate(Up, rotationAxis * rotationZ);
+
+					Target = direction + Eye;
 					break;
 
 				case MouseButtons.Right:
-					deltaX = e.X - _mouseX;
-					deltaY = e.Y - _mouseY;
-			
-					Position += new Vector3(deltaX / 360f, deltaY / -360f, 0f);
-
-					_mouseX = e.X;
-					_mouseY = e.Y;
+					Rotate(new Vector3(deltaX / -360f, deltaY / -360f, 0f));
 					break;
 			}
+
+			_mouseX = e.X;
+			_mouseY = e.Y;
 		}
 
 		public void HandleMouseWheel(MouseEventArgs e)

@@ -18,28 +18,54 @@ namespace SubdivisionRenderer
 		private static readonly RenderForm RenderForm;
 		private static readonly ModelRenderer ModelRenderer;
 
-		private static readonly Queue<Double> FrameCounter = new Queue<double>();
+		private static readonly Queue<long> FrameCounter = new Queue<long>();
 		private static readonly List<string> Models = new List<string>();
 		private static int _currentModelIndex;
 
 		public static float FrameRate;
+
+		private const float TessellationStep = 1f;
+		private const int SampleSize = 500;
+
+		private static readonly Size WindowSize = new Size(1280, 720);
 
 		static Program()
 		{
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
 
-			RenderForm = new RenderForm("Subdivision");
-			DxManager = new D3DManager(RenderForm);
+			RenderForm = new RenderForm("Subdivision") { ClientSize = WindowSize };
 
+			try
+			{
+				DxManager = new D3DManager(RenderForm);
+			}
+			catch (Exception e)
+			{
+				MessageBox.Show(RenderForm, "Error setting up D3D. \nMessage: '" + e.Message + "'.");
+				Application.Exit();
+			}
+			
 			FindModels();
 
-			ModelRenderer = new ModelRenderer(DxManager.Device, new Model(Models.First()));
+			try
+			{
+				ModelRenderer = new ModelRenderer(DxManager.Device, new Model(Models.First()));
+				ModelRenderer.RenderParameters.Camera.Aspect = (float) RenderForm.ClientSize.Width / RenderForm.ClientSize.Height;
+			}
+			catch (Exception e)
+			{
+				MessageBox.Show(RenderForm, "Error creating the ModelRenderer. Make sure only quadrilateral models are in the Models folder. \nMessage: '" + e.Message + "'.");
+				Application.Exit();
+			}
 
 			RenderForm.FormClosing += OnExit;
+
 			RenderForm.KeyDown += HandleKeyboardStart;
 			RenderForm.KeyUp += HandleKeyboardEnd;
+
 			RenderForm.UserResized += FormResized;
+
 			RenderForm.MouseDown += HandleMouseDown;
 			RenderForm.MouseUp += HandleMouseUp;
 			RenderForm.MouseMove += HandleMouseMove;
@@ -50,7 +76,7 @@ namespace SubdivisionRenderer
 		public static void Main()
 		{
 			var stopwatch = Stopwatch.StartNew();
-			var timeSinceTitleUpdate = 1f;
+			var timeSinceTitleUpdate = 0f;
 			MessagePump.Run(RenderForm, () => {
 
 				DxManager.Device.ImmediateContext.ClearRenderTargetView(DxManager.RenderTargetView, Color.White);
@@ -59,12 +85,8 @@ namespace SubdivisionRenderer
 				ModelRenderer.Render();
 
 				DxManager.SwapChain.Present(0, PresentFlags.None);
-				
-				if (FrameCounter.Count > 50)
-					FrameCounter.Dequeue();
-				FrameCounter.Enqueue(stopwatch.ElapsedTicks);
 
-				FrameRate = 1f / (float)(FrameCounter.Average() / Stopwatch.Frequency);
+				UpdateFrameCounter(stopwatch.ElapsedTicks);
 
 				if (timeSinceTitleUpdate > 0.5f)
 				{
@@ -77,13 +99,32 @@ namespace SubdivisionRenderer
 			});
 		}
 
+		private static void UpdateFrameCounter(long newFrameTicks)
+		{
+			if (FrameCounter.Count >= SampleSize)
+				FrameCounter.Dequeue();
+			FrameCounter.Enqueue(newFrameTicks);
+
+			FrameRate = 1f / (float)(FrameCounter.Average() / Stopwatch.Frequency);
+		}
+
 		private static void UpdateTitle(Control renderForm)
 		{
+			var avg = FrameCounter.Average();
+			var sum = FrameCounter.Sum(val => Math.Pow(val - avg, 2));
+
+			var dev = Math.Sqrt(sum / (FrameCounter.Count - 1));
+
+			dev = dev / avg * FrameRate;
+
 			renderForm.Text =
-				String.Format("{0} fps | Subdivion: {1} | TessellationFactor: {2} | Textures: {3} | Wireframe: {4}",
-				              FrameRate.ToString("F0", CultureInfo.InvariantCulture),
+				String.Format("{0:n0} FPS - {1:n0} StdDev | Subdivion: {2} | TessellationFactor: {3:n1} | Model: '{4}' - {5:n0} Triangles | Textures: {6} | Wireframe: {7}",
+				              FrameRate,
+							  dev,
 				              ModelRenderer.RenderParameters.ShaderMode,
-				              ModelRenderer.RenderParameters.TessellationFactor.ToString("0.0", CultureInfo.InvariantCulture),
+				              ModelRenderer.RenderParameters.TessellationFactor,
+							  Models[_currentModelIndex].Substring(9),
+							  ModelRenderer.Model.Faces.Count * 2 * ModelRenderer.RenderParameters.TessellationFactor * ModelRenderer.RenderParameters.TessellationFactor,
 							  ModelRenderer.RenderParameters.Textured ? "ON" : "OFF",
 							  ModelRenderer.RenderParameters.WireFrame ? "ON" : "OFF");
 		}
@@ -99,7 +140,7 @@ namespace SubdivisionRenderer
 		{
 			var form = sender as RenderForm;
 			DxManager.ResizeRenderTargets(form.ClientSize.Width, form.ClientSize.Height);
-			ModelRenderer.RenderParameters.Camera.Aspect = (float)form.ClientSize.Width / form.ClientSize.Height;
+			ModelRenderer.RenderParameters.Camera.Aspect = (float) form.ClientSize.Width / form.ClientSize.Height;
 		}
 
 		private static void HandleKeyboardStart(Object sender, KeyEventArgs e)
@@ -120,7 +161,6 @@ namespace SubdivisionRenderer
 					break;
 				case Controls.Wireframe:
 					ModelRenderer.RenderParameters.WireFrame = !ModelRenderer.RenderParameters.WireFrame;
-					DxManager.ChangeWireframe(ModelRenderer.RenderParameters.WireFrame);
 					break;
 				case Controls.ShadingToggle:
 					ModelRenderer.RenderParameters.FlatShading = !ModelRenderer.RenderParameters.FlatShading;
@@ -130,22 +170,32 @@ namespace SubdivisionRenderer
 					break;
 				case Controls.TessFactorUp:
 					ModelRenderer.RenderParameters.TessellationFactor =
-						ModelRenderer.RenderParameters.TessellationFactor + ModelRenderer.RenderParameters.TessellationStep > 64f
+						ModelRenderer.RenderParameters.TessellationFactor + TessellationStep > 64f
 							? ModelRenderer.RenderParameters.TessellationFactor
-							: ModelRenderer.RenderParameters.TessellationFactor + ModelRenderer.RenderParameters.TessellationStep;
+							: ModelRenderer.RenderParameters.TessellationFactor + TessellationStep;
 					break;
 				case Controls.TessFactorDown:
 					ModelRenderer.RenderParameters.TessellationFactor =
-						ModelRenderer.RenderParameters.TessellationFactor - ModelRenderer.RenderParameters.TessellationStep < 1f
+						ModelRenderer.RenderParameters.TessellationFactor - TessellationStep < 1f
 							? ModelRenderer.RenderParameters.TessellationFactor
-							: ModelRenderer.RenderParameters.TessellationFactor - ModelRenderer.RenderParameters.TessellationStep;
+							: ModelRenderer.RenderParameters.TessellationFactor - TessellationStep;
 					break;
 				case Controls.TextureToggle:
 					ModelRenderer.RenderParameters.Textured = !ModelRenderer.RenderParameters.Textured;
 					break;
 				case Controls.ChangeModel:
 					_currentModelIndex = (_currentModelIndex + 1) % Models.Count;
-					ModelRenderer.Model = new Model(Models[_currentModelIndex]);
+					try
+					{
+						ModelRenderer.Model = new Model(Models[_currentModelIndex]);
+					}
+					catch (FileLoadException fileLoadException)
+					{
+						MessageBox.Show(RenderForm, 
+							String.Format("Error loading '{0}'. Only quadrilateral meshes are supported. \nMessage: '{1}'.", 
+								Models[_currentModelIndex], 
+								fileLoadException.Message));
+					}
 					break;
 				case Controls.Reset:
 					ModelRenderer.RenderParameters.Camera.Reset();

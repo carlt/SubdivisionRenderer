@@ -16,7 +16,8 @@ namespace SubdivisionRenderer
 		public List<Face> Faces { get; private set; }
 		public List<AccPatch> AccPatches { get; private set; }
 
-		private readonly Dictionary<int, List<AccPatch>> _pointLookUp = new Dictionary<int, List<AccPatch>>(); 
+		private readonly Dictionary<int, List<AccPatch>> _pointNeighborLookUp = new Dictionary<int, List<AccPatch>>(); 
+		private readonly Dictionary<Point, uint> _pointIndexLookUp = new Dictionary<Point, uint>();
 
 		public Model(string path)
 		{
@@ -90,13 +91,18 @@ namespace SubdivisionRenderer
 					var face = new Face();
 					foreach (var i in Enumerable.Range(0, 4))
 					{
-						face.Points.Add(
+						var point = 
 							new Point {
 								PositionIndex = int.Parse(matches[i].Groups[1].Value) - 1,
 								TextureIndex = matches[i].Groups[2].Value == String.Empty ? 0 : int.Parse(matches[i].Groups[2].Value) - 1,
 								NormalIndex = int.Parse(matches[i].Groups[3].Value) - 1
-							});
+							};
+
+						face.Points.Add(point);
+						_pointIndexLookUp[point] = (uint) (Faces.Count * 4 + i);
 					}
+
+					Faces.Add(face);
 
 					var patch = new AccPatch {
 							Points = new List<Point>(face.Points),
@@ -106,16 +112,20 @@ namespace SubdivisionRenderer
 					
 					foreach (var point in face.Points)
 					{
-						if (_pointLookUp.ContainsKey(point.PositionIndex))
-							_pointLookUp[point.PositionIndex].Add(patch);
+						if (_pointNeighborLookUp.ContainsKey(point.PositionIndex))
+							_pointNeighborLookUp[point.PositionIndex].Add(patch);
 						else
-							_pointLookUp[point.PositionIndex] = new List<AccPatch> { patch };
+							_pointNeighborLookUp[point.PositionIndex] = new List<AccPatch> { patch };
 					}
 
 					AccPatches.Add(patch);
-					Faces.Add(face);
 				}
 		   } 
+		}
+
+		public uint FindPointIndex(Point p)
+		{
+			return _pointIndexLookUp[p];
 		}
 
 		private void SetupAccPatches()
@@ -192,7 +202,7 @@ namespace SubdivisionRenderer
 
 		private AccPatch FindQuadWithPointsAbNotC(Point a, Point b, Point c)
 		{
-			return _pointLookUp[a.PositionIndex].Intersect(_pointLookUp[b.PositionIndex]).Except(_pointLookUp[c.PositionIndex]).First();
+			return _pointNeighborLookUp[a.PositionIndex].Intersect(_pointNeighborLookUp[b.PositionIndex]).Except(_pointNeighborLookUp[c.PositionIndex]).First();
 		}
 	}
 }

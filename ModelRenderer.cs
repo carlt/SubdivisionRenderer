@@ -21,7 +21,6 @@ namespace SubdivisionRenderer
 			set { _model = value; SetupBuffers(); }
 		}
 
-		private InputLayout _inputLayout;
 		private Effect _shaderEffect;
 		private EffectPass _shaderEffectPass;
 
@@ -29,11 +28,11 @@ namespace SubdivisionRenderer
 		
 		private EffectMatrixVariable _world;
 		private EffectMatrixVariable _worldViewProjection;
+		
 		private EffectScalarVariable _tessFactor;
-		private EffectResourceVariable _textureMap;
 		private EffectScalarVariable _enableTexture;
-		private EffectScalarVariable _enableWireframe;
-		private ShaderResourceView _textureView;
+		private EffectScalarVariable _enableNormals;
+		private EffectScalarVariable _flatShading;
 
 		private EffectVectorVariable _phongParameters;
 		private EffectVectorVariable _ambientLightColor;
@@ -42,15 +41,17 @@ namespace SubdivisionRenderer
 		private EffectVectorVariable _light2Color;
 		private EffectVectorVariable _light2Direction;
 		private EffectVectorVariable _cameraPosition;
-		private EffectScalarVariable _flatShading;
 
+		private EffectResourceVariable _textureMap;
 		private EffectResourceVariable _valencePrefixResource;
+		private ShaderResourceView _textureView;
 		private ShaderResourceView _valencePrefixView;
 
 		private Buffer _vertexBuffer;
 		private Buffer _indexBuffer;
 		private Buffer _accIndexBuffer;
 		private Buffer _valencePrefixBuffer;
+		
 
 		public ModelRenderer(Device device, Model model)
 		{
@@ -64,9 +65,6 @@ namespace SubdivisionRenderer
 
 		public void Render()
 		{
-			_device.ImmediateContext.InputAssembler.InputLayout = _inputLayout;
-			_device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(_vertexBuffer, VertexShaderInput.SizeInBytes, 0));
-
 			SetRenderParameters();
 
 			if (RenderParameters.ShaderMode == ShaderMode.Acc)
@@ -83,18 +81,20 @@ namespace SubdivisionRenderer
 			var drawCount = RenderParameters.ShaderMode == ShaderMode.Acc ? Model.AccPatches.Count * 32 : Model.Faces.Count * 4;
 
 			// Draw
+			ChangeWireFrame(false);
 			_shaderEffectPass.Apply(_device.ImmediateContext);
 			_device.ImmediateContext.DrawIndexed(drawCount, 0, 0);
 
-			if (!RenderParameters.DisplayNormals) return;
+			if (!RenderParameters.WireFrame) return;
 			
+			ChangeWireFrame(true);
 			_shaderEffect.GetTechniqueByIndex((int) RenderParameters.ShaderMode).GetPassByIndex(1).Apply(_device.ImmediateContext);
 			_device.ImmediateContext.DrawIndexed(drawCount, 0, 0);
 		}
 
 		private void SetRenderParameters()
 		{
-			ChangeShader(RenderParameters.ShaderMode);
+			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int) RenderParameters.ShaderMode).GetPassByIndex(0);
 
 			// Update Camera
 			_world.SetMatrix(RenderParameters.Camera.World());
@@ -118,22 +118,17 @@ namespace SubdivisionRenderer
 			
 			// Set Options
 			_flatShading.Set(RenderParameters.FlatShading);
-			_enableWireframe.Set(RenderParameters.WireFrame);
+			_enableNormals.Set(RenderParameters.DisplayNormals);
 
-			// ACC prefix buffer
+			// Valences and Prefixes for ACC
 			_valencePrefixResource.SetResource(_valencePrefixView);
-		}
-
-		private void ChangeShader(ShaderMode shader)
-		{
-			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int)shader).GetPassByIndex(0);
 		}
 
 		private void CompileShaders(string texturePath, string shaderPath)
 		{
 			_shaderEffect = new Effect(_device, ShaderBytecode.CompileFromFile(shaderPath, "fx_5_0", ShaderFlags.None, EffectFlags.None));
 			_shaderEffectPass = _shaderEffect.GetTechniqueByIndex((int) RenderParameters.ShaderMode).GetPassByIndex(0);
-			_inputLayout = new InputLayout(_device, _shaderEffectPass.Description.Signature, VertexShaderInput.InputLayout);
+			_device.ImmediateContext.InputAssembler.InputLayout = new InputLayout(_device, _shaderEffectPass.Description.Signature, VertexShaderInput.InputLayout);
 
 			// Setup Global Variables
 			_world = _shaderEffect.GetVariableByName("World").AsMatrix();
@@ -141,7 +136,7 @@ namespace SubdivisionRenderer
 			_tessFactor = _shaderEffect.GetVariableByName("TessFactor").AsScalar();
 			_textureMap = _shaderEffect.GetVariableByName("Texture").AsResource();
 			_enableTexture = _shaderEffect.GetVariableByName("EnableTexture").AsScalar();
-			_enableWireframe = _shaderEffect.GetVariableByName("WireFrame").AsScalar();
+			_enableNormals = _shaderEffect.GetVariableByName("Normals").AsScalar();
 			_textureView = new ShaderResourceView(_device, Texture2D.FromFile(_device, texturePath));
 
 			// Setup Lighting Variables
@@ -154,6 +149,7 @@ namespace SubdivisionRenderer
 			_cameraPosition = _shaderEffect.GetVariableByName("Eye").AsVector();
 			_flatShading = _shaderEffect.GetVariableByName("FlatShading").AsScalar();
 
+			// Valences and Prefixes for ACC
 			_valencePrefixResource = _shaderEffect.GetVariableByName("ValencePrefixBuffer").AsResource();
 		}
 
@@ -164,7 +160,7 @@ namespace SubdivisionRenderer
 
 			var allPoints = Model.Faces.SelectMany(f => f.Points).ToList();
 
-			var indexBufferContents = Model.Faces.SelectMany(face => face.Points).Select(point => Convert.ToUInt32(allPoints.FindIndex(p => p == point))).ToList();
+			var indexBufferContents = Model.Faces.SelectMany(face => face.Points).Select(point => Model.FindPointIndex(point)).ToList();
 			var vertexBufferContents = allPoints.Select(
 				point => new VertexShaderInput {
 					Position = Model.Vertices[point.PositionIndex],
@@ -172,7 +168,6 @@ namespace SubdivisionRenderer
 					TexCoord = Model.Textures.Count == 0 ? new Vector2(0.5f, 0.5f) : Model.Textures[point.TextureIndex]
 				}).ToList();
 
-			// Create normal VertexBuffer
 			var vertexStream = new DataStream(vertexBufferContents.Count * VertexShaderInput.SizeInBytes, true, true);
 
 			foreach (var vertexInfo in vertexBufferContents)
@@ -191,7 +186,8 @@ namespace SubdivisionRenderer
 
 			vertexStream.Dispose();
 
-			// Create normal IndexBuffer
+			_device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(_vertexBuffer, VertexShaderInput.SizeInBytes, 0));
+
 			var indexStream = new DataStream(indexBufferContents.Count * Marshal.SizeOf(typeof(uint)), true, true);
 
 			foreach (var indexInfo in indexBufferContents)
@@ -215,15 +211,11 @@ namespace SubdivisionRenderer
 
 		private void SetupAccBuffers()
 		{
-			var allPoints = Model.Faces.SelectMany(f => f.Points).ToList();
-
 			var accIndexBuffer =
 				Model.AccPatches
 					.SelectMany(p => p.Points.Pad(32))
-					.Select(p => Convert.ToUInt32(allPoints.FindIndex(point => point == p)))
+					.Select(p => Model.FindPointIndex(p))
 					.ToList();
-
-			// Acc index buffer
 
 			var indexStream = new DataStream(accIndexBuffer.Count * Marshal.SizeOf(typeof(uint)), true, true);
 
@@ -242,8 +234,6 @@ namespace SubdivisionRenderer
 				});
 
 			indexStream.Dispose();
-
-			// Valence[4] and Prefix[4] buffer
 
 			var valencePrefixStream = new DataStream(Model.AccPatches.Count * 8 * Marshal.SizeOf(typeof(uint)), true, true);
 
@@ -280,10 +270,18 @@ namespace SubdivisionRenderer
 				});
 		}
 
+		private void ChangeWireFrame(bool enabled)
+		{
+			_device.ImmediateContext.Rasterizer.State = RasterizerState.FromDescription(_device, 
+				new RasterizerStateDescription {
+					CullMode = CullMode.Back,
+					FillMode = enabled ? FillMode.Wireframe : FillMode.Solid,
+					IsMultisampleEnabled = true
+				});
+		}
+
 		public void Dispose()
 		{
-			if (_inputLayout != null)
-				_inputLayout.Dispose();
 			if (_shaderEffect != null)
 				_shaderEffect.Dispose();
 			if (_textureView != null)
