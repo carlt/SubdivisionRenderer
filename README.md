@@ -14,7 +14,7 @@ Movement:
 - Arrow Keys : Rotate model.
 - R : Reset camera position.
 
-Settings
+Settings:
 - 1-4 : Change shader (Linear, Phong, PN Quads, ACC).
 - Q : Increase tessellation factor.
 - E : Decrease tessellation factor.

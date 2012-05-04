@@ -54,19 +54,19 @@
     </Members>
     <AssociationLine Name="PhongParameters" Type="SubdivisionRenderer.PhongParameters" FixedFromPoint="true" FixedToPoint="true">
       <Path>
-        <Point X="2.781" Y="7.603" />
+        <Point X="2.781" Y="7.795" />
         <Point X="2.781" Y="8.812" />
         <Point X="4.5" Y="8.812" />
       </Path>
     </AssociationLine>
     <AssociationLine Name="Lights" Type="SubdivisionRenderer.Light" FixedFromPoint="true">
       <Path>
-        <Point X="2.188" Y="7.603" />
+        <Point X="2.188" Y="7.795" />
         <Point X="2.188" Y="8.5" />
       </Path>
     </AssociationLine>
     <TypeIdentifier>
-      <HashCode>CAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAABAAAAAAAA=</HashCode>
+      <HashCode>CAAAAAAAAAAAAAAAAAAAAgAACAAAAAAAAABAAAAAAAA=</HashCode>
       <FileName>Lighting.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
@@ -79,9 +79,11 @@
   <Class Name="SubdivisionRenderer.Model">
     <Position X="7.75" Y="4.25" Width="2" />
     <Members>
+      <Field Name="_pointIndexLookUp" Hidden="true" />
       <Field Name="_pointNeighborLookUp" Hidden="true" />
       <Method Name="ConditionPatch" Hidden="true" />
       <Method Name="ConditionPoint" Hidden="true" />
+      <Method Name="FindPointIndex" Hidden="true" />
       <Method Name="FindQuadWithPointsAbNotC" Hidden="true" />
       <Method Name="Load" Hidden="true" />
       <Method Name="Model" Hidden="true" />
@@ -89,7 +91,7 @@
     </Members>
     <AssociationLine Name="AccPatches" Type="SubdivisionRenderer.AccPatch" FixedFromPoint="true">
       <Path>
-        <Point X="9.312" Y="6.833" />
+        <Point X="9.312" Y="5.93" />
         <Point X="9.312" Y="7" />
       </Path>
     </AssociationLine>
@@ -108,6 +110,7 @@
       <Field Name="_ambientLightColor" Hidden="true" />
       <Field Name="_cameraPosition" Hidden="true" />
       <Field Name="_device" Hidden="true" />
+      <Field Name="_enableNormals" Hidden="true" />
       <Field Name="_enableTexture" Hidden="true" />
       <Field Name="_flatShading" Hidden="true" />
       <Field Name="_indexBuffer" Hidden="true" />
@@ -128,6 +131,7 @@
       <Field Name="_vertexBuffer" Hidden="true" />
       <Field Name="_world" Hidden="true" />
       <Field Name="_worldViewProjection" Hidden="true" />
+      <Method Name="ChangeWireFrame" Hidden="true" />
       <Method Name="CompileShaders" Hidden="true" />
       <Method Name="Dispose" Hidden="true" />
       <Method Name="ModelRenderer" Hidden="true" />
@@ -137,17 +141,16 @@
     </Members>
     <AssociationLine Name="Model" Type="SubdivisionRenderer.Model" FixedToPoint="true">
       <Path>
-        <Point X="6" Y="2.874" />
-        <Point X="6.75" Y="2.874" />
-        <Point X="6.75" Y="3.141" />
-        <Point X="8.875" Y="3.141" />
+        <Point X="4.875" Y="3.103" />
+        <Point X="4.875" Y="3.478" />
+        <Point X="8.875" Y="3.478" />
         <Point X="8.875" Y="4.25" />
       </Path>
     </AssociationLine>
     <AssociationLine Name="RenderParameters" Type="SubdivisionRenderer.RenderParameters" FixedFromPoint="true" FixedToPoint="true">
       <Path>
-        <Point X="3.75" Y="3.286" />
-        <Point X="2.312" Y="3.286" />
+        <Point X="3.75" Y="2.812" />
+        <Point X="2.312" Y="2.812" />
         <Point X="2.312" Y="3.5" />
       </Path>
     </AssociationLine>
@@ -179,8 +182,11 @@
       <Method Name="OnExit" Hidden="true" />
       <Method Name="Program" Hidden="true" />
       <Field Name="RenderForm" Hidden="true" />
+      <Field Name="SampleSize" Hidden="true" />
       <Field Name="TessellationStep" Hidden="true" />
+      <Method Name="UpdateFrameCounter" Hidden="true" />
       <Method Name="UpdateTitle" Hidden="true" />
+      <Field Name="WindowSize" Hidden="true" />
     </Members>
     <AssociationLine Name="DxManager" Type="SubdivisionRenderer.D3DManager" FixedToPoint="true">
       <Path>
@@ -190,11 +196,9 @@
     </AssociationLine>
     <AssociationLine Name="ModelRenderer" Type="SubdivisionRenderer.ModelRenderer" ManuallyRouted="true" FixedFromPoint="true" FixedToPoint="true">
       <Path>
-        <Point X="1.562" Y="2.438" />
-        <Point X="1.562" Y="2.69" />
-        <Point X="3.5" Y="2.69" />
-        <Point X="3.5" Y="2.494" />
-        <Point X="3.75" Y="2.494" />
+        <Point X="1.562" Y="1.603" />
+        <Point X="1.562" Y="2.312" />
+        <Point X="3.75" Y="2.312" />
       </Path>
     </AssociationLine>
     <TypeIdentifier>

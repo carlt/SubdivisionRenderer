@@ -421,7 +421,7 @@ DS_OUTPUT DS_PNQUAD(HSCONSTANT_PNQUAD_OUTPUT input, float2 uv : SV_DomainLocatio
 }
 
 //----------------------------------------------------------------------------------------
-// ACC Tesselation Shaders
+// ACC Tesselation Shaders - Code is adapted from the SubD11 sample of the DXSDK!
 //----------------------------------------------------------------------------------------
 float4 ComputeInteriorVertex(uint index, uint Val[4], const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip )
 {
@@ -477,8 +477,8 @@ void ComputeCorner( uint index,
 					const in uint Val[4], 
 					const in uint Pref[4] )
 {
-	const float fOWt = 1; //Odd edge weight
-	const float fEWt = 4; //Even edge weight
+	const float fOWt = 1; //Odd weight
+	const float fEWt = 4; //Even weight
 
 	// Figure out where to start the walk by using the previous corner's prefix value
 	uint PrefIm1 = 0;
@@ -536,7 +536,7 @@ void ComputeCorner( uint index,
 	CornerN += ip[MOD4(index+3)].normal * fEWt;
 	
 	// Normalize the corner weights
-	CornerB *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] ); // normalize
+	CornerB *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] );
 	CornerN *= 1.0f / ( Val[index] * Val[index] + 5 * Val[index] );
 }
 
@@ -548,6 +548,7 @@ void ComputeCorner( uint index,
 //--------------------------------------------------------------------------------------
 float3 ComputeEdgeVertex(in uint index /* 0-7 */, const in InputPatch<VS_OUTPUT, MAX_ACC_POINTS> ip, const in uint Val[4], const in uint Pref[4] )
 {
+	// Weight sums, 10 is sum of constants
 	float val1 = 2 * Val[0] + 10;
 	float val2 = 2 * Val[1] + 10;
 	float val13 = 2 * Val[3] + 10;
@@ -557,7 +558,7 @@ float3 ComputeEdgeVertex(in uint index /* 0-7 */, const in InputPatch<VS_OUTPUT,
 	float val7 = val2;
 	float val11 = val14;
 	
-	float3 vRetVal = float3(0,0,0);
+	float3 vRetVal = float3(0, 0, 0);
 	switch( index )
 	{
 	// Horizontal

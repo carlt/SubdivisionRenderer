@@ -8,11 +8,13 @@ namespace SubdivisionRenderer
 	{
 		public PhongParameters PhongParameters { get; set; }
 		public Color AmbientLightColor { get; set; }
+		public Color BackgroundColor { get; set; }
 		public List<Light> Lights { get; set; }
 
 		public Lighting()
 		{
 			AmbientLightColor = Color.White;
+			BackgroundColor = Color.Black;
 			
 			Lights = 
 				new List<Light> {
@@ -22,7 +24,7 @@ namespace SubdivisionRenderer
 
 			PhongParameters = 
 				new PhongParameters {
-					Ambient = 0.1f,
+					Ambient = 0.4f,
 					Diffuse = 0.5f,
 					Specular = 0.5f,
 					Shininess = 40f

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -79,7 +78,7 @@ namespace SubdivisionRenderer
 			var timeSinceTitleUpdate = 0f;
 			MessagePump.Run(RenderForm, () => {
 
-				DxManager.Device.ImmediateContext.ClearRenderTargetView(DxManager.RenderTargetView, Color.White);
+				DxManager.Device.ImmediateContext.ClearRenderTargetView(DxManager.RenderTargetView, ModelRenderer.RenderParameters.Lighting.BackgroundColor);
 				DxManager.Device.ImmediateContext.ClearDepthStencilView(DxManager.DepthStencilView, DepthStencilClearFlags.Depth, 1f, 0);
 
 				ModelRenderer.Render();
